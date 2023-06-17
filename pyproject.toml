@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "node-agent"
+version = "0.1.0"
+description = "Node Agent"
+authors = ["ge <ge@nixhacks.net>"]
+readme = "README.md"
+packages = [{include = "node_agent"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+libvirt-python = "^9.4.0"  # 9.0.0 on Debian 12
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
