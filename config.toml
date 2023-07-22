@@ -1,0 +1,24 @@
+[general]
+
+[libvirt]
+uri = 'qemu:///system'
+
+[logging]
+level = 'INFO'
+file = '/var/log/node-agent.log'
+
+[volumes]
+
+[[volumes.pools]]
+name = 'ssd-nvme'
+enabled = true
+default = true
+path = '/srv/vm-volumes/ssd-nvme'
+
+[[volumes.pools]]
+name = 'hdd'
+enabled = true
+path = '/srv/vm-volumes/hdd'
+
+[vm.images]
+path = '/srv/vm-images'

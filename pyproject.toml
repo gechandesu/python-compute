@@ -4,11 +4,16 @@ version = "0.1.0"
 description = "Node Agent"
 authors = ["ge <ge@nixhacks.net>"]
 readme = "README.md"
-packages = [{include = "node_agent"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-libvirt-python = "^9.4.0"  # 9.0.0 on Debian 12
+libvirt-python = "9.0.0"  # 9.0.0 on Debian 12
+lxml = "^4.9.2"  # 4.9.2 on Debian 12
+docopt = "^0.6.2"  # 0.6.2 on Debian 12
+
+[tool.poetry.scripts]
+na-vmctl = "node_agent.utils.vmctl:cli"
+na-vmexec = "node_agent.utils.vmexec:cli"
 
 [build-system]
 requires = ["poetry-core"]

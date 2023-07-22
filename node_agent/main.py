@@ -1,8 +1,30 @@
+from pathlib import Path
+from contextlib import AbstractContextManager
+
 import libvirt
 
-from .vm import VirtualMachine
+from .config import ConfigLoader
+from .exceptions import LibvirtSessionError
 
 
-class NodeAgent:
-    def __init__(self, conn: libvirt.virConnect, config: dict):
-        self.vm = VirtualMachine(conn, config)
+class LibvirtSession(AbstractContextManager):
+    def __init__(self, config: Path | None = None):
+        self.config = ConfigLoader(config)
+        self.session = self._connect(self.config['libvirt']['uri'])
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, exception_traceback):
+        self.close()
+
+    def _connect(self, connection_uri: str):
+        try:
+            return libvirt.open(connection_uri)
+        except libvirt.libvirtError as err:
+            raise LibvirtSessionError(
+                'Failed to open connection to the hypervisor: %s' % err
+            )
+
+    def close(self) -> None:
+        self.session.close()
