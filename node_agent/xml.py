@@ -1,91 +1,79 @@
-import pathlib
+from pathlib import Path
 
-from lxml import etree
+from lxml.etree import Element, SubElement, QName, tostring
 from lxml.builder import E
 
 
-class NewXML:
-    def __init__(
+class XMLConstructor:
+    """
+    The XML constructor. This class builds XML configs for libvirtd.
+    Features:
+        - Generate basic virtual machine XML. See gen_domain_xml()
+        - Generate virtual disk XML. See gen_volume_xml()
+        - Add arbitrary metadata to XML from special structured dict
+    """
+
+    def __init__(self, xml: str | None = None):
+        self.xml_string = xml
+        self.xml = None
+
+    @property
+    def domain_xml(self):
+        return self.xml
+
+    def gen_domain_xml(
         self,
         name: str,
         title: str,
-        memory: int,
         vcpus: int,
         cpu_vendor: str,
         cpu_model: str,
-        volume_path: str,
-
-        desc: str | None = None,
-        show_boot_menu: bool = False,
-    ):
+        memory: int,
+        volume: Path,
+        desc: str = ""
+    ) -> None:
         """
-        Initialise basic XML using lxml E-Factory. Ref:
-
-            - https://lxml.de/tutorial.html#the-e-factory
-            - https://libvirt.org/formatdomain.html
+        Generate default domain XML configuration for virtual machines.
+        See https://lxml.de/tutorial.html#the-e-factory for details.
         """
-        DOMAIN = E.domain
-        NAME = E.name
-        TITLE = E.title
-        DESCRIPTION = E.description
-        METADATA = E.metadata
-        MEMORY = E.memory
-        CURRENTMEMORY = E.currentMemory
-        VCPU = E.vcpu
-        OS = E.os
-        OS_TYPE = E.type
-        OS_BOOT = E.boot
-        FEATURES = E.features
-        ACPI = E.acpi
-        APIC = E.apic
-        CPU = E.cpu
-        CPU_VENDOR = E.vendor
-        CPU_MODEL = E.model
-        ON_POWEROFF = E.on_poweroff
-        ON_REBOOT = E.on_reboot
-        ON_CRASH = E.on_crash
-        DEVICES = E.devices
-        EMULATOR = E.emulator
-        DISK = E.disk
-        DISK_DRIVER = E.driver
-        DISK_SOURCE = E.source
-        DISK_TARGET = E.target
-        INTERFACE = E.interface
-        GRAPHICS = E.graphics
-
-        self.domain = DOMAIN(
-            NAME(name),
-            TITLE(title),
-            DESCRIPTION(desc or ""),
-            METADATA(),
-            MEMORY(str(memory), unit='MB'),
-            CURRENTMEMORY(str(memory), unit='MB'),
-            VCPU(str(vcpus), placement='static'),
-            OS(
-                OS_TYPE('hvm', arch='x86_64'),
-                OS_BOOT(dev='cdrom'),
-                OS_BOOT(dev='hd'),
+        self.xml = E.domain(
+            E.name(name),
+            E.title(title),
+            E.description(desc),
+            E.metadata(),
+            E.memory(str(memory), unit='MB'),
+            E.currentMemory(str(memory), unit='MB'),
+            E.vcpu(str(vcpus), placement='static'),
+            E.os(
+                E.type('hvm', arch='x86_64'),
+                E.boot(dev='cdrom'),
+                E.boot(dev='hd'),
             ),
-            FEATURES(
-                ACPI(),
-                APIC(),
+            E.features(
+                E.acpi(),
+                E.apic(),
             ),
-            CPU(
-                CPU_VENDOR(cpu_vendor),
-                CPU_MODEL(cpu_model, fallback='forbid'),
+            E.cpu(
+                E.vendor(cpu_vendor),
+                E.model(cpu_model, fallback='forbid'),
+                E.topology(sockets='1', dies='1', cores=str(vcpus), threads='1'),
                 mode='custom',
                 match='exact',
                 check='partial',
             ),
-            ON_POWEROFF('destroy'),
-            ON_REBOOT('restart'),
-            ON_CRASH('restart'),
-            DEVICES(
-                EMULATOR('/usr/bin/qemu-system-x86_64'),
-                DISK(
-                    DISK_DRIVER(name='qemu', type='qcow2', cache='writethrough'),
-                    DISK_SOURCE(file=volume_path),
-                    DISK_TARGET(dev='vda', bus='virtio'),
+            E.on_poweroff('destroy'),
+            E.on_reboot('restart'),
+            E.on_crash('restart'),
+            E.pm(
+                E('suspend-to-mem', enabled='no'),
+                E('suspend-to-disk', enabled='no'),
+            ),
+            E.devices(
+                E.emulator('/usr/bin/qemu-system-x86_64'),
+                E.disk(
+                    E.driver(name='qemu', type='qcow2', cache='writethrough'),
+                    E.source(file=volume),
+                    E.target(dev='vda', bus='virtio'),
                     type='file',
                     device='disk',
                 ),
@@ -93,23 +81,106 @@ class NewXML:
             type='kvm',
         )
 
-    def add_volume(self, options: dict, params: dict):
-        """Add disk device to domain."""
-        DISK = E.disk
-        DISK_DRIVER = E.driver
-        DISK_SOURCE = E.source
-        DISK_TARGET = E.target
+    def gen_volume_xml(
+        self,
+        device_name: str,
+        file: Path,
+        bus: str = 'virtio',
+        cache: str = 'writethrough',
+        disktype: str = 'file',
+    ):
+        return E.disk(
+            E.driver(name='qemu', type='qcow2', cache=cache),
+            E.source(file=file),
+            E.target(dev=device_name, bus=bus),
+            type=disktype,
+            device='disk'
+        )
 
-x = NewXML(
-    name='1',
-    title='first',
-    memory=2048,
-    vcpus=4,
-    cpu_vendor='Intel',
-    cpu_model='Broadwell',
-    volume_path='/srv/vm-volumes/5031077f-f9ea-410b-8d84-ae6e79f8cde0.qcow2',
-)
+    def add_volume(self):
+        raise NotImplementedError()
 
-# x.add_volume()
-# print(x.domain)
-print(etree.tostring(x.domain, pretty_print=True).decode().strip())
+    def add_meta(self, data: dict, namespace: str, nsprefix: str) -> None:
+        """
+        Add metadata to domain. See:
+        https://libvirt.org/formatdomain.html#general-metadata
+        """
+        metadata = metadata_old = self.xml.xpath('/domain/metadata')[0]
+        metadata.append(
+            self.construct_xml(
+                data,
+                namespace=namespace,
+                nsprefix=nsprefix,
+            )
+        )
+        self.xml.replace(metadata_old, metadata)
+
+    def remove_meta(self, namespace: str):
+        """Remove metadata by namespace."""
+        raise NotImplementedError()
+
+    def construct_xml(
+        self,
+        tag: dict,
+        namespace: str | None = None,
+        nsprefix: str | None = None,
+        root: Element = None,
+    ) -> Element:
+        """
+        Shortly this recursive function transforms dictonary to XML.
+        Return etree.Element built from dict with following structure::
+
+            {
+                'name': 'devices',  # tag name
+                'text': '',  # optional key
+                'values': {  # optional key, must be a dict of key-value pairs
+                    'type': 'disk'
+                },
+                children: []  # optional key, must be a list of dicts
+            }
+
+        Child elements must have the same structure. Infinite `children` nesting
+        is allowed.
+        """
+        use_ns = False
+        if isinstance(namespace, str) and isinstance(nsprefix, str):
+            use_ns = True
+        # Create element
+        if root is None:
+            if use_ns:
+                element = Element(
+                    QName(namespace, tag['name']),
+                    nsmap={nsprefix: namespace},
+                )
+            else:
+                element = Element(tag['name'])
+        else:
+            if use_ns:
+                element = SubElement(
+                    root,
+                    QName(namespace, tag['name']),
+                )
+            else:
+                element = SubElement(root, tag['name'])
+        # Fill up element with content
+        if 'text' in tag.keys():
+            element.text = tag['text']
+        if 'values' in tag.keys():
+            for key in tag['values'].keys():
+                element.set(str(key), str(tag['values'][key]))
+        if 'children' in tag.keys():
+            for child in tag['children']:
+                element.append(
+                    self.construct_xml(
+                        child,
+                        namespace=namespace,
+                        nsprefix=nsprefix,
+                        root=element,
+                    )
+                )
+        return element
+
+    def to_string(self):
+        return tostring(
+            self.xml, pretty_print=True, encoding='utf-8'
+        ).decode().strip()

@@ -23,8 +23,8 @@ class LibvirtSession(AbstractContextManager):
             return libvirt.open(connection_uri)
         except libvirt.libvirtError as err:
             raise LibvirtSessionError(
-                'Failed to open connection to the hypervisor: %s' % err
-            )
+                f'Failed to open connection to the hypervisor: {err}'
+            ) from err
 
     def close(self) -> None:
         self.session.close()

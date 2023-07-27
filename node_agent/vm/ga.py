@@ -14,8 +14,8 @@ from .base import VMBase
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_WAIT_TIMEOUT = 60  # seconds
-POLL_INTERVAL = 0.3
+QEMU_TIMEOUT = 60  # seconds
+POLL_INTERVAL = 0.3  # also seconds
 
 
 class QemuAgent(VMBase):
@@ -33,7 +33,7 @@ class QemuAgent(VMBase):
     _get_cmd_result()
         Intended for long-time commands. This function loops and every
         POLL_INTERVAL calls 'guest-exec-status' for specified guest PID.
-        Polling ends on command exited or on timeout.
+        Polling ends if command exited or on timeout.
     _return_tuple()
         This method transforms JSON command output to tuple and decode
         base64 encoded strings optionally.
@@ -46,7 +46,7 @@ class QemuAgent(VMBase):
         flags: int | None = None
     ):
         super().__init__(session, name)
-        self.timeout = timeout or DEFAULT_WAIT_TIMEOUT  # timeout for guest agent
+        self.timeout = timeout or QEMU_TIMEOUT  # timeout for guest agent
         self.flags = flags or libvirt_qemu.VIR_DOMAIN_QEMU_MONITOR_COMMAND_DEFAULT
 
     def execute(
@@ -56,7 +56,7 @@ class QemuAgent(VMBase):
         capture_output: bool = False,
         decode_output: bool = False,
         wait: bool = True,
-        timeout: int = DEFAULT_WAIT_TIMEOUT,
+        timeout: int = QEMU_TIMEOUT,
     ):
         """
         Execute command on guest and return output if capture_output is True.
@@ -99,7 +99,7 @@ class QemuAgent(VMBase):
         capture_output: bool = False,
         decode_output: bool = False,
         wait: bool = True,
-        timeout: int = DEFAULT_WAIT_TIMEOUT,
+        timeout: int = QEMU_TIMEOUT,
     ):
         """
         Execute command on guest with selected shell. /bin/sh by default.
@@ -139,7 +139,7 @@ class QemuAgent(VMBase):
         pid: int,
         decode_output: bool = False,
         wait: bool = True,
-        timeout: int = DEFAULT_WAIT_TIMEOUT,
+        timeout: int = QEMU_TIMEOUT,
     ):
         """Get executed command result. See GuestAgent.execute() for info."""
         exited = exitcode = stdout = stderr = None

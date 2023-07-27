@@ -17,6 +17,7 @@ import sys
 import pathlib
 import logging
 
+import libvirt
 from docopt import docopt
 
 sys.path.append('/home/ge/Code/node-agent')
@@ -38,13 +39,14 @@ def cli():
     args = docopt(__doc__)
     config = pathlib.Path(args['--config']) or None
     loglvl = args['--loglvl'].upper()
+    machine = args['<machine>']
 
     if loglvl in levels:
         logging.basicConfig(level=levels[loglvl])
 
     with LibvirtSession(config) as session:
         try:
-            vm = VirtualMachine(session, args['<machine>'])
+            vm = VirtualMachine(session, machine)
             if args['status']:
                 print(vm.status)
             if args['is-running']:
@@ -58,7 +60,7 @@ def cli():
             if args['shutdown']:
                 vm.shutdown(force=args['--force'], sigkill=args['sigkill'])
         except VMNotFound as nferr:
-            sys.exit(f'{Color.RED}VM {args["<machine>"]} not found.{Color.NONE}')
+            sys.exit(f'{Color.RED}VM {machine} not found.{Color.NONE}')
         except VMError as vmerr:
             sys.exit(f'{Color.RED}{vmerr}{Color.NONE}')
 

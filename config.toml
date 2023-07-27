@@ -1,4 +1,7 @@
 [general]
+# Наверное стоит создавать локи в виде файлов во время операций с ВМ
+# /var/node-agent/locks/vms/{vm}
+locks_dir = '/var/node-agent/locks'
 
 [libvirt]
 uri = 'qemu:///system'
@@ -20,5 +23,13 @@ name = 'hdd'
 enabled = true
 path = '/srv/vm-volumes/hdd'
 
-[vm.images]
+[vms.defaults]
+# Какие-то значения по-умолчанию, используемые при создании/работе с ВМ
+# Эти параметры также будут аффектить на CLI утилиты
+autostart = true  # ставить виртуалки в автостарт после установки
+start = true  # запускать ВМ после установки
+cpu_vendor = 'Intel'
+cpu_model = 'Broadwell'
+
+[vms.images]
 path = '/srv/vm-images'

@@ -35,6 +35,7 @@ def cli():
     args = docopt(__doc__)
     config = pathlib.Path(args['--config']) or None
     loglvl = args['--loglvl'].upper()
+    machine = args['<machine>']
 
     if loglvl in levels:
         logging.basicConfig(level=levels[loglvl])
@@ -44,7 +45,7 @@ def cli():
         cmd = args['<command>']
 
         try:
-            ga = QemuAgent(session, args['<machine>'])
+            ga = QemuAgent(session, machine)
             exited, exitcode, stdout, stderr = ga.shellexec(
                 cmd,
                 executable=shell,
@@ -63,14 +64,15 @@ def cli():
             sys.exit(errmsg)
         except VMNotFound as err:
             sys.exit(
-                f'{Color.RED}VM {args["<machine>"]} not found.{Color.NONE}'
+                f'{Color.RED}VM {machine} not found.{Color.NONE}'
             )
 
     if not exited:
         print(
             Color.YELLOW
             +'[NOTE: command may still running]'
-            + Color.NONE
+            + Color.NONE,
+            file=sys.stderr
         )
     else:
         if exitcode == 0:
@@ -80,13 +82,14 @@ def cli():
         print(
             exitcolor
             + f'[command exited with exit code {exitcode}]'
-            + Color.NONE
+            + Color.NONE,
+            file=sys.stderr
         )
 
     if stderr:
-        print(Color.RED + stderr.strip() + Color.NONE)
+        print(Color.RED + stderr.strip() + Color.NONE, file=sys.stderr)
     if stdout:
-        print(Color.GREEN + stdout.strip() + Color.NONE)
+        print(Color.GREEN + stdout.strip() + Color.NONE, file=sys.stdout)
 
 if __name__ == '__main__':
     cli()

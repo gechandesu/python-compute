@@ -13,7 +13,7 @@ class VirtualMachine(VMBase):
 
     @property
     def name(self):
-        return self.domain.name()
+        return self.domname
 
     @property
     def status(self) -> str:
@@ -21,7 +21,12 @@ class VirtualMachine(VMBase):
         Return VM state: 'running', 'shutoff', etc. Reference:
         https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState
         """
-        state = self.domain.info()[0]
+        try:
+            # libvirt returns list [state: int, reason: int]
+            # https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetState
+            state = self.domain.state()[0]
+        except libvirt.libvirtError as err:
+            raise VMError(f'Cannot fetch VM status vm={self.domname}: {err}') from err
         match state:
             case libvirt.VIR_DOMAIN_NOSTATE:
                 return 'nostate'
@@ -48,6 +53,16 @@ class VirtualMachine(VMBase):
             return False
         return True
 
+    @property
+    def is_autostart(self) -> bool:
+        """Return True if VM autostart is enabled, else return False."""
+        try:
+            if self.domain.autostart() == 1:
+                return True
+            return False
+        except libvirt.libvirtError as err:
+            raise VMError(f'Cannot get autostart status vm={self.domname}: {err}') from err
+
     def start(self) -> None:
         """Start defined VM."""
         logger.info('Starting VM: vm=%s', self.domname)
@@ -57,9 +72,7 @@ class VirtualMachine(VMBase):
         try:
             ret = self.domain.create()
         except libvirt.libvirtError as err:
-            raise VMError(err) from err
-        if ret != 0:
-            raise VMError('Cannot start VM: vm=%s exit_code=%s', self.domname, ret)
+            raise VMError(f'Cannot start vm={self.domname} return_code={ret}: {err}') from err
 
     def shutdown(self, force=False, sigkill=False) -> None:
         """
@@ -71,41 +84,56 @@ class VirtualMachine(VMBase):
             flags = libvirt.VIR_DOMAIN_DESTROY_DEFAULT
         else:
             flags = libvirt.VIR_DOMAIN_DESTROY_GRACEFUL
-        if force:
-            ret = self.domain.destroyFlags(flags=flags)
-        else:
-            # Normal VM shutdown via ACPI signal, OS may ignore this.
-            ret = self.domain.shutdown()
-        if ret != 0:
+        try:
+            if force:
+                self.domain.destroyFlags(flags=flags)
+            else:
+                # Normal VM shutdown via ACPI signal, OS may ignore this.
+                self.domain.shutdown()
+        except libvirt.libvirtError as err:
             raise VMError(
-                f'Cannot shutdown VM, try force or sigkill: %s', self.domname
-            )
+                f'Cannot shutdown vm={self.domname} '
+                f'force={force} sigkill={sigkill}: {err}'
+            ) from err
 
     def reset(self):
         """
-        Copypaste from libvirt doc::
+        Copypaste from libvirt doc:
 
-            Reset a domain immediately without any guest OS shutdown.
-            Reset emulates the power reset button on a machine, where all
-            hardware sees the RST line set and reinitializes internal state.
+        Reset a domain immediately without any guest OS shutdown.
+        Reset emulates the power reset button on a machine, where all
+        hardware sees the RST line set and reinitializes internal state.
 
-            Note that there is a risk of data loss caused by reset without any
-            guest OS shutdown.
+        Note that there is a risk of data loss caused by reset without any
+        guest OS shutdown.
         """
-        ret = self.domian.reset()
-        if ret != 0:
-            raise VMError('Cannot reset VM: %s', self.domname)
+        try:
+            self.domian.reset()
+        except libvirt.libvirtError as err:
+            raise VMError(f'Cannot reset vm={self.domname}: {err}') from err
 
     def reboot(self) -> None:
         """Send ACPI signal to guest OS to reboot. OS may ignore this."""
-        ret = self.domain.reboot()
-        if ret != 0:
-            raise VMError('Cannot reboot: %s', self.domname)
+        try:
+            self.domain.reboot()
+        except libvirt.libvirtError as err:
+            raise VMError(f'Cannot reboot vm={self.domname}: {err}') from err
 
-    def set_autostart(self) -> None:
-        ret = self.domain.autostart()
-        if ret != 0:
-            raise VMError('Cannot set : %s', self.domname)
+    def autostart(self, enabled: bool) -> None:
+        """
+        Configure VM to be automatically started when the host machine boots.
+        """
+        if enabled:
+            autostart_flag = 1
+        else:
+            autostart_flag = 0
+        try:
+            self.domain.setAutostart(autostart_flag)
+        except libvirt.libvirtError as err:
+            raise VMError(
+                f'Cannot set autostart vm={self.domname} '
+                f'autostart={autostart_flag}: {err}'
+            ) from err
 
     def vcpu_set(self, count: int):
         pass
