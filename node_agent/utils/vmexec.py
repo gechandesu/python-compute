@@ -5,7 +5,7 @@ Usage:  na-vmexec [options] <machine> <command>
 
 Options:
     -c, --config <file>  Config file [default: /etc/node-agent/config.yaml]
-    -l, --loglvl <lvl>   Logging level [default: INFO]
+    -l, --loglvl <lvl>   Logging level
     -s, --shell <shell>  Guest shell [default: /bin/sh]
     -t, --timeout <sec>  QEMU timeout in seconds to stop polling command status [default: 60]
 """
@@ -35,8 +35,11 @@ class Color:
 def cli():
     args = docopt(__doc__)
     config = pathlib.Path(args['--config']) or None
-    loglvl = args['--loglvl'].upper()
+    loglvl = None
     machine = args['<machine>']
+
+    if args['--loglvl']:
+        loglvl = args['--loglvl'].upper()
 
     if loglvl in levels:
         logging.basicConfig(level=levels[loglvl])
@@ -91,6 +94,7 @@ def cli():
         print(Color.RED + stderr.strip() + Color.NONE, file=sys.stderr)
     if stdout:
         print(Color.GREEN + stdout.strip() + Color.NONE, file=sys.stdout)
+    sys.exit(exitcode)
 
 if __name__ == '__main__':
     cli()

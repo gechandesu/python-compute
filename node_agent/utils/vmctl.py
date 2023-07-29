@@ -8,7 +8,7 @@ Usage:  na-vmctl [options] status <machine>
 
 Options:
     -c, --config <file>  Config file [default: /etc/node-agent/config.yaml]
-    -l, --loglvl <lvl>   Logging level [default: INFO]
+    -l, --loglvl <lvl>   Logging level
     -f, --force          Force action. On shutdown calls graceful destroy()
     -9, --sigkill        Send SIGKILL to QEMU process. Not affects without --force
 """
@@ -39,8 +39,11 @@ class Color:
 def cli():
     args = docopt(__doc__)
     config = pathlib.Path(args['--config']) or None
-    loglvl = args['--loglvl'].upper()
+    loglvl = None
     machine = args['<machine>']
+
+    if args['--loglvl']:
+        loglvl = args['--loglvl'].upper()
 
     if loglvl in levels:
         logging.basicConfig(level=levels[loglvl])
