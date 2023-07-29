@@ -21,8 +21,7 @@ import libvirt
 from docopt import docopt
 
 from ..main import LibvirtSession
-from ..vm import VirtualMachine
-from ..exceptions import VMError, VMNotFound
+from ..vm import VirtualMachine, VMError, VMNotFound
 
 
 logger = logging.getLogger(__name__)

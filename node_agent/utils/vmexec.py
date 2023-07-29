@@ -17,8 +17,7 @@ import logging
 from docopt import docopt
 
 from ..main import LibvirtSession
-from ..vm import QemuAgent
-from ..exceptions import QemuAgentError, VMNotFound
+from ..vm import QemuAgent, QemuAgentError, VMNotFound
 
 
 logger = logging.getLogger(__name__)

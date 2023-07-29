@@ -4,7 +4,10 @@ from contextlib import AbstractContextManager
 import libvirt
 
 from .config import ConfigLoader
-from .exceptions import LibvirtSessionError
+
+
+class LibvirtSessionError(Exception):
+    """Something went wrong while connecting to libvirt."""
 
 
 class LibvirtSession(AbstractContextManager):

@@ -1,7 +1,7 @@
 import libvirt
 
 from ..main import LibvirtSession
-from ..exceptions import VMNotFound
+from .exceptions import VMNotFound
 
 
 class VirtualMachineBase:

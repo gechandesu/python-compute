@@ -2,8 +2,8 @@ import logging
 
 import libvirt
 
-from ..exceptions import VMError
 from .base import VirtualMachineBase
+from .exceptions import VMError
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class VirtualMachine(VirtualMachineBase):
             logger.debug('VM vm=%s is already started, nothing to do', self.domname)
             return
         try:
-            ret = self.domain.create()
+            self.domain.create()
         except libvirt.libvirtError as err:
             raise VMError(f'Cannot start vm={self.domname}: {err}') from err
 

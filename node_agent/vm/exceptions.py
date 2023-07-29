@@ -1,9 +1,5 @@
-class ConfigLoadError(Exception):
-    """Bad config file syntax, unreachable file or bad data."""
-
-
-class LibvirtSessionError(Exception):
-    """Something went wrong while connecting to libvirt."""
+class QemuAgentError(Exception):
+    """Mostly QEMU Guest Agent is not responding."""
 
 
 class VMError(Exception):
@@ -15,7 +11,3 @@ class VMNotFound(Exception):
         self.domain = domain
         self.message = message.format(domain=domain)
         super().__init__(self.message)
-
-
-class QemuAgentError(Exception):
-    """Mostly QEMU Guest Agent is not responding."""

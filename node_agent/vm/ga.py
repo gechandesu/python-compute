@@ -7,8 +7,8 @@ import libvirt
 import libvirt_qemu
 
 from ..main import LibvirtSession
-from ..exceptions import QemuAgentError
 from .base import VirtualMachineBase
+from .exceptions import QemuAgentError
 
 
 logger = logging.getLogger(__name__)

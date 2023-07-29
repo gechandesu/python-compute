@@ -3,11 +3,13 @@ import tomllib
 from pathlib import Path
 from collections import UserDict
 
-from .exceptions import ConfigLoadError
-
 
 NODEAGENT_CONFIG_FILE = os.getenv('NODEAGENT_CONFIG_FILE')
 NODEAGENT_DEFAULT_CONFIG_FILE = '/etc/node-agent/config.toml'
+
+
+class ConfigLoadError(Exception):
+    """Bad config file syntax, unreachable file or bad data."""
 
 
 class ConfigLoader(UserDict):
