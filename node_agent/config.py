@@ -1,5 +1,4 @@
 import os
-import sys
 import tomllib
 from pathlib import Path
 from collections import UserDict
@@ -24,7 +23,7 @@ class ConfigLoader(UserDict):
             with open(self.file, 'rb') as config:
                 return tomllib.load(config)
                 # todo: config schema validation
-        except (OSError, ValueError) as readerr:
-            raise ConfigLoadError(f'Cannot read config file: {self.file}: {readerr}') from readerr
         except tomllib.TOMLDecodeError as tomlerr:
             raise ConfigLoadError(f'Bad TOML syntax in config file: {self.file}: {tomlerr}') from tomlerr
+        except (OSError, ValueError) as readerr:
+            raise ConfigLoadError(f'Cannot read config file: {self.file}: {readerr}') from readerr

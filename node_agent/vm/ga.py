@@ -1,14 +1,14 @@
 import json
 import logging
 from time import time, sleep
-from base64 import standard_b64encode, b64decode, b64encode
+from base64 import standard_b64encode, b64decode
 
 import libvirt
 import libvirt_qemu
 
 from ..main import LibvirtSession
 from ..exceptions import QemuAgentError
-from .base import VMBase
+from .base import VirtualMachineBase
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ QEMU_TIMEOUT = 60  # seconds
 POLL_INTERVAL = 0.3  # also seconds
 
 
-class QemuAgent(VMBase):
+class QemuAgent(VirtualMachineBase):
     """
     Interacting with QEMU guest agent. Methods:
 

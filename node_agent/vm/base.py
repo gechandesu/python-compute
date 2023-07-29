@@ -4,7 +4,7 @@ from ..main import LibvirtSession
 from ..exceptions import VMNotFound
 
 
-class VMBase:
+class VirtualMachineBase:
     def __init__(self, session: LibvirtSession, name: str):
         self.domname = name
         self.session = session.session  # virConnect object

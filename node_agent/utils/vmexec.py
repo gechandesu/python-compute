@@ -16,8 +16,9 @@ import logging
 
 from docopt import docopt
 
-sys.path.append('/home/ge/Code/node-agent')
-from node_agent import LibvirtSession, VMNotFound, QemuAgent, QemuAgentError
+from ..main import LibvirtSession
+from ..vm import QemuAgent
+from ..exceptions import QemuAgentError, VMNotFound
 
 
 logger = logging.getLogger(__name__)

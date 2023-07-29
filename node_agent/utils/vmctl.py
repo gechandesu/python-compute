@@ -20,8 +20,9 @@ import logging
 import libvirt
 from docopt import docopt
 
-sys.path.append('/home/ge/Code/node-agent')
-from node_agent import LibvirtSession, VirtualMachine, VMError, VMNotFound
+from ..main import LibvirtSession
+from ..vm import VirtualMachine
+from ..exceptions import VMError, VMNotFound
 
 
 logger = logging.getLogger(__name__)

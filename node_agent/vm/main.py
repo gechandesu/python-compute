@@ -3,13 +3,13 @@ import logging
 import libvirt
 
 from ..exceptions import VMError
-from .base import VMBase
+from .base import VirtualMachineBase
 
 
 logger = logging.getLogger(__name__)
 
 
-class VirtualMachine(VMBase):
+class VirtualMachine(VirtualMachineBase):
 
     @property
     def name(self):
@@ -72,7 +72,7 @@ class VirtualMachine(VMBase):
         try:
             ret = self.domain.create()
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot start vm={self.domname} return_code={ret}: {err}') from err
+            raise VMError(f'Cannot start vm={self.domname}: {err}') from err
 
     def shutdown(self, force=False, sigkill=False) -> None:
         """
@@ -108,7 +108,7 @@ class VirtualMachine(VMBase):
         guest OS shutdown.
         """
         try:
-            self.domian.reset()
+            self.domain.reset()
         except libvirt.libvirtError as err:
             raise VMError(f'Cannot reset vm={self.domname}: {err}') from err
 
