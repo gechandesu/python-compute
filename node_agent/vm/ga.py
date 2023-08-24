@@ -1,18 +1,16 @@
 import json
 import logging
-from time import time, sleep
-from base64 import standard_b64encode, b64decode
+from base64 import b64decode, standard_b64encode
+from time import sleep, time
 
 import libvirt
 import libvirt_qemu
 
-from ..main import LibvirtSession
 from .base import VirtualMachineBase
 from .exceptions import QemuAgentError
 
 
 logger = logging.getLogger(__name__)
-
 
 QEMU_TIMEOUT = 60  # seconds
 POLL_INTERVAL = 0.3  # also seconds
@@ -28,39 +26,30 @@ class QemuAgent(VirtualMachineBase):
     shellexec()
         High-level method for executing shell commands on guest. Command
         must be passed as string. Wraps execute() method.
-    _execute()
-        Just executes QEMU command. Wraps libvirt_qemu.qemuAgentCommand()
-    _get_cmd_result()
-        Intended for long-time commands. This function loops and every
-        POLL_INTERVAL calls 'guest-exec-status' for specified guest PID.
-        Polling ends if command exited or on timeout.
-    _return_tuple()
-        This method transforms JSON command output to tuple and decode
-        base64 encoded strings optionally.
     """
 
     def __init__(self,
-        session: LibvirtSession,
-        name: str,
-        timeout: int | None = None,
-        flags: int | None = None
-    ):
+                 session: 'LibvirtSession',
+                 name: str,
+                 timeout: int | None = None,
+                 flags: int | None = None):
         super().__init__(session, name)
         self.timeout = timeout or QEMU_TIMEOUT  # timeout for guest agent
         self.flags = flags or libvirt_qemu.VIR_DOMAIN_QEMU_MONITOR_COMMAND_DEFAULT
 
-    def execute(
-        self,
-        command: dict,
-        stdin: str | None = None,
-        capture_output: bool = False,
-        decode_output: bool = False,
-        wait: bool = True,
-        timeout: int = QEMU_TIMEOUT,
-    ):
+    def execute(self,
+                command: dict,
+                stdin: str | None = None,
+                capture_output: bool = False,
+                decode_output: bool = False,
+                wait: bool = True,
+                timeout: int = QEMU_TIMEOUT
+                ) -> tuple[bool | None, int | None, str | None, str | None]:
         """
-        Execute command on guest and return output if capture_output is True.
+        Execute command on guest and return output if `capture_output` is True.
         See https://wiki.qemu.org/Documentation/QMP for QEMU commands reference.
+        If `wait` is True poll guest command output with POLL_INTERVAL. Raise
+        QemuAgentError on `timeout` reached (in seconds).
         Return values:
             tuple(
                 exited: bool | None,
@@ -68,15 +57,15 @@ class QemuAgent(VirtualMachineBase):
                 stdout: str | None,
                 stderr: str | None
             )
-        stdout and stderr are base64 encoded strings or None.
+        stdout and stderr are base64 encoded strings or None. stderr and stdout
+        will be decoded if `decode_output` is True.
         """
         # todo command dict schema validation
         if capture_output:
             command['arguments']['capture-output'] = True
         if isinstance(stdin, str):
             command['arguments']['input-data'] = standard_b64encode(
-                stdin.encode('utf-8')
-            ).decode('utf-8')
+                stdin.encode('utf-8')).decode('utf-8')
 
         # Execute command on guest
         cmd_out = self._execute(command)
@@ -91,19 +80,18 @@ class QemuAgent(VirtualMachineBase):
             )
         return None, None, None, None
 
-    def shellexec(
-        self,
-        command: str,
-        stdin: str | None = None,
-        executable: str = '/bin/sh',
-        capture_output: bool = False,
-        decode_output: bool = False,
-        wait: bool = True,
-        timeout: int = QEMU_TIMEOUT,
-    ):
+    def shellexec(self,
+                  command: str,
+                  stdin: str | None = None,
+                  executable: str = '/bin/sh',
+                  capture_output: bool = False,
+                  decode_output: bool = False,
+                  wait: bool = True,
+                  timeout: int = QEMU_TIMEOUT
+                  ) -> tuple[bool | None, int | None, str | None, str | None]:
         """
         Execute command on guest with selected shell. /bin/sh by default.
-        Otherwise of execute() this function brings command as string.
+        Otherwise of execute() this function brings shell command as string.
         """
         cmd = {
             'execute': 'guest-exec',
@@ -121,7 +109,6 @@ class QemuAgent(VirtualMachineBase):
             timeout=timeout,
         )
 
-
     def _execute(self, command: dict):
         logging.debug('Execute command: vm=%s cmd=%s', self.domname, command)
         try:
@@ -135,19 +122,10 @@ class QemuAgent(VirtualMachineBase):
             raise QemuAgentError(err) from err
 
     def _get_cmd_result(
-        self,
-        pid: int,
-        decode_output: bool = False,
-        wait: bool = True,
-        timeout: int = QEMU_TIMEOUT,
-    ):
+            self, pid: int, decode_output: bool = False, wait: bool = True,
+            timeout: int = QEMU_TIMEOUT):
         """Get executed command result. See GuestAgent.execute() for info."""
-        exited = exitcode = stdout = stderr = None
-
-        cmd = {
-            'execute': 'guest-exec-status',
-            'arguments': {'pid': pid},
-        }
+        cmd = {'execute': 'guest-exec-status', 'arguments': {'pid': pid}}
 
         if not wait:
             output = json.loads(self._execute(cmd))
@@ -165,28 +143,23 @@ class QemuAgent(VirtualMachineBase):
                 raise QemuAgentError(
                     f'Polling command pid={pid} took longer than {timeout} seconds.'
                 )
-        logger.debug(
-            'Polling command pid=%s finished, time taken: %s seconds',
-            pid, int(time()-start_time)
-        )
+        logger.debug('Polling command pid=%s finished, time taken: %s seconds',
+                     pid, int(time() - start_time))
         return self._return_tuple(output, decode=decode_output)
 
-    def _return_tuple(self, cmd_output: dict, decode: bool = False):
-        exited = cmd_output['return']['exited']
-        exitcode = cmd_output['return']['exitcode']
+    def _return_tuple(self, output: dict, decode: bool = False):
+        output = output['return']
+        exited = output['exited']
+        exitcode = output['exitcode']
+        stdout = stderr = None
 
-        try:
-            stdout = cmd_output['return']['out-data']
-            if decode and stdout:
-                stdout = b64decode(stdout).decode('utf-8')
-        except KeyError:
-            stdout = None
+        if 'out-data' in output.keys():
+            stdout = output['out-data']
+        if 'err-data' in output.keys():
+            stderr = output['err-data']
 
-        try:
-            stderr = cmd_output['return']['err-data']
-            if decode and stderr:
-                stderr = b64decode(stderr).decode('utf-8')
-        except KeyError:
-            stderr = None
+        if decode:
+            stdout = b64decode(stdout).decode('utf-8') if stdout else None
+            stderr = b64decode(stderr).decode('utf-8') if stderr else None
 
         return exited, exitcode, stdout, stderr

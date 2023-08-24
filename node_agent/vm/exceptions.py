@@ -7,6 +7,7 @@ class VMError(Exception):
 
 
 class VMNotFound(Exception):
+
     def __init__(self, domain, message='VM not found: {domain}'):
         self.domain = domain
         self.message = message.format(domain=domain)

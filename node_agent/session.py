@@ -1,5 +1,5 @@
-from pathlib import Path
 from contextlib import AbstractContextManager
+from pathlib import Path
 
 import libvirt
 
@@ -7,10 +7,11 @@ from .config import ConfigLoader
 
 
 class LibvirtSessionError(Exception):
-    """Something went wrong while connecting to libvirt."""
+    """Something went wrong while connecting to libvirtd."""
 
 
 class LibvirtSession(AbstractContextManager):
+
     def __init__(self, config: Path | None = None):
         self.config = ConfigLoader(config)
         self.session = self._connect(self.config['libvirt']['uri'])
@@ -26,8 +27,7 @@ class LibvirtSession(AbstractContextManager):
             return libvirt.open(connection_uri)
         except libvirt.libvirtError as err:
             raise LibvirtSessionError(
-                f'Failed to open connection to the hypervisor: {err}'
-            ) from err
+                f'Failed to open connection to the hypervisor: {err}') from err
 
     def close(self) -> None:
         self.session.close()

@@ -26,24 +26,19 @@ class VirtualMachine(VirtualMachineBase):
             # https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetState
             state = self.domain.state()[0]
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot fetch VM status vm={self.domname}: {err}') from err
-        match state:
-            case libvirt.VIR_DOMAIN_NOSTATE:
-                return 'nostate'
-            case libvirt.VIR_DOMAIN_RUNNING:
-                return 'running'
-            case libvirt.VIR_DOMAIN_BLOCKED:
-                return 'blocked'
-            case libvirt.VIR_DOMAIN_PAUSED:
-                return 'paused'
-            case libvirt.VIR_DOMAIN_SHUTDOWN:
-                return 'shutdown'
-            case libvirt.VIR_DOMAIN_SHUTOFF:
-                return 'shutoff'
-            case libvirt.VIR_DOMAIN_CRASHED:
-                return 'crashed'
-            case libvirt.VIR_DOMAIN_PMSUSPENDED:
-                return 'pmsuspended'
+            raise VMError(
+                f'Cannot fetch VM status vm={self.domname}: {err}') from err
+        STATES = {
+            libvirt.VIR_DOMAIN_NOSTATE: 'nostate',
+            libvirt.VIR_DOMAIN_RUNNING: 'running',
+            libvirt.VIR_DOMAIN_BLOCKED: 'blocked',
+            libvirt.VIR_DOMAIN_PAUSED: 'paused',
+            libvirt.VIR_DOMAIN_SHUTDOWN: 'shutdown',
+            libvirt.VIR_DOMAIN_SHUTOFF: 'shutoff',
+            libvirt.VIR_DOMAIN_CRASHED: 'crashed',
+            libvirt.VIR_DOMAIN_PMSUSPENDED: 'pmsuspended',
+        }
+        return STATES.get(state)
 
     @property
     def is_running(self) -> bool:
@@ -61,42 +56,53 @@ class VirtualMachine(VirtualMachineBase):
                 return True
             return False
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot get autostart status vm={self.domname}: {err}') from err
+            raise VMError(
+                f'Cannot get autostart status vm={self.domname}: {err}'
+            ) from err
 
     def start(self) -> None:
         """Start defined VM."""
         logger.info('Starting VM: vm=%s', self.domname)
         if self.is_running:
-            logger.debug('VM vm=%s is already started, nothing to do', self.domname)
+            logger.debug('VM vm=%s is already started, nothing to do',
+                         self.domname)
             return
         try:
             self.domain.create()
         except libvirt.libvirtError as err:
             raise VMError(f'Cannot start vm={self.domname}: {err}') from err
 
-    def shutdown(self, force=False, sigkill=False) -> None:
+    def shutdown(self, mode: str | None = None) -> None:
         """
-        Send ACPI signal to guest OS to shutdown. OS may ignore this.
-        Use `force=True` for graceful VM destroy. Add `sigkill=True`
-        to hard shutdown (may corrupt guest data!).
+        Send signal to guest OS to shutdown. Supports several modes:
+        * GUEST_AGENT - use guest agent
+        * NORMAL - use method choosen by hypervisor to shutdown machine
+        * SIGTERM - send SIGTERM to QEMU process, destroy machine gracefully
+        * SIGKILL - send SIGKILL, this option may corrupt guest data!
+        If mode is not passed use 'NORMAL' mode.
         """
-        if sigkill:
-            flags = libvirt.VIR_DOMAIN_DESTROY_DEFAULT
-        else:
-            flags = libvirt.VIR_DOMAIN_DESTROY_GRACEFUL
+        MODES = {
+            'GUEST_AGENT': libvirt.VIR_DOMAIN_SHUTDOWN_GUEST_AGENT,
+            'NORMAL': libvirt.VIR_DOMAIN_SHUTDOWN_DEFAULT,
+            'SIGTERM': libvirt.VIR_DOMAIN_DESTROY_GRACEFUL,
+            'SIGKILL': libvirt.VIR_DOMAIN_DESTROY_DEFAULT
+        }
+        if mode is None:
+            mode = 'NORMAL'
+        if not isinstance(mode, str):
+            raise ValueError(f'Mode must be a string, not {type(mode)}')
+        if mode.upper() not in MODES:
+            raise ValueError(f"Unsupported mode: '{mode}'")
         try:
-            if force:
-                self.domain.destroyFlags(flags=flags)
-            else:
-                # Normal VM shutdown via ACPI signal, OS may ignore this.
-                self.domain.shutdown()
+            if mode in ['GUEST_AGENT', 'NORMAL']:
+                self.domain.shutdownFlags(flags=MODES.get(mode))
+            elif mode in ['SIGTERM', 'SIGKILL']:
+                self.domain.destroyFlags(flags=MODES.get(mode))
         except libvirt.libvirtError as err:
-            raise VMError(
-                f'Cannot shutdown vm={self.domname} '
-                f'force={force} sigkill={sigkill}: {err}'
-            ) from err
+            raise VMError(f'Cannot shutdown vm={self.domname} with '
+                          f'mode={mode}: {err}') from err
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Copypaste from libvirt doc:
 
@@ -119,35 +125,33 @@ class VirtualMachine(VirtualMachineBase):
         except libvirt.libvirtError as err:
             raise VMError(f'Cannot reboot vm={self.domname}: {err}') from err
 
-    def autostart(self, enabled: bool) -> None:
+    def autostart(self, enable: bool) -> None:
         """
         Configure VM to be automatically started when the host machine boots.
         """
-        if enabled:
+        if enable:
             autostart_flag = 1
         else:
             autostart_flag = 0
         try:
             self.domain.setAutostart(autostart_flag)
         except libvirt.libvirtError as err:
-            raise VMError(
-                f'Cannot set autostart vm={self.domname} '
-                f'autostart={autostart_flag}: {err}'
-            ) from err
+            raise VMError(f'Cannot set autostart vm={self.domname} '
+                          f'autostart={autostart_flag}: {err}') from err
 
-    def vcpu_set(self, count: int):
+    def set_vcpus(self, count: int):
         pass
 
-    def vram_set(self, count: int):
+    def set_ram(self, count: int):
         pass
 
-    def ssh_keys_list(self, user: str):
+    def list_ssh_keys(self, user: str):
         pass
 
-    def ssh_keys_add(self, user: str):
+    def set_ssh_keys(self, user: str):
         pass
 
-    def ssh_keys_remove(self, user: str):
+    def remove_ssh_keys(self, user: str):
         pass
 
     def set_user_password(self, user: str):

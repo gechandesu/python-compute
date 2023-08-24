@@ -12,9 +12,22 @@ lxml = "^4.9.2"  # 4.9.2 on Debian 12
 docopt = "^0.6.2"  # 0.6.2 on Debian 12
 
 [tool.poetry.scripts]
-na-vmctl = "node_agent.utils.vmctl:cli"
-na-vmexec = "node_agent.utils.vmexec:cli"
+na-vmctl = "node_agent.cli.vmctl:cli"
+na-vmexec = "node_agent.cli.vmexec:cli"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.yapf]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "invalid-name",
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "import-error",
+    "too-many-arguments",
+]
+

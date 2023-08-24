@@ -1,11 +1,11 @@
 import libvirt
 
-from ..main import LibvirtSession
-from .exceptions import VMNotFound
+from .exceptions import VMError, VMNotFound
 
 
 class VirtualMachineBase:
-    def __init__(self, session: LibvirtSession, name: str):
+
+    def __init__(self, session: 'LibvirtSession', name: str):
         self.domname = name
         self.session = session.session  # virConnect object
         self.config = session.config  # ConfigLoader object
@@ -19,4 +19,4 @@ class VirtualMachineBase:
                 return domain
             raise VMNotFound(name)
         except libvirt.libvirtError as err:
-            raise VMNotFound(err) from err
+            raise VMError(err) from err

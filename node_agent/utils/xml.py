@@ -1,7 +1,20 @@
 from pathlib import Path
 
-from lxml.etree import Element, SubElement, QName, tostring
 from lxml.builder import E
+from lxml.etree import Element, QName, SubElement, tostring
+
+from .mac import random_mac
+
+
+XPATH_DOMAIN_NAME = '/domain/name'
+XPATH_DOMAIN_TITLE = '/domain/title'
+XPATH_DOMAIN_DESCRIPTION = '/domain/description'
+XPATH_DOMAIN_METADATA = '/domain/metadata'
+XPATH_DOMAIN_MEMORY = '/domain/memory'
+XPATH_DOMAIN_CURRENT_MEMORY = '/domain/currentMemory'
+XPATH_DOMAIN_VCPU = '/domain/vcpu'
+XPATH_DOMAIN_OS = '/domian/os'
+XPATH_DOMAIN_CPU = '/domain/cpu'
 
 
 class XMLConstructor:
@@ -21,17 +34,16 @@ class XMLConstructor:
     def domain_xml(self):
         return self.xml
 
-    def gen_domain_xml(
-        self,
-        name: str,
-        title: str,
-        vcpus: int,
-        cpu_vendor: str,
-        cpu_model: str,
-        memory: int,
-        volume: Path,
-        desc: str = ""
-    ) -> None:
+    def gen_domain_xml(self,
+                       name: str,
+                       title: str,
+                       vcpus: int,
+                       vcpu_vendor: str,
+                       vcpu_model: str,
+                       memory: int,
+                       volume: Path,
+                       vcpu_features: dict | None = None,
+                       desc: str = "") -> None:
         """
         Generate default domain XML configuration for virtual machines.
         See https://lxml.de/tutorial.html#the-e-factory for details.
@@ -54,9 +66,10 @@ class XMLConstructor:
                 E.apic(),
             ),
             E.cpu(
-                E.vendor(cpu_vendor),
-                E.model(cpu_model, fallback='forbid'),
-                E.topology(sockets='1', dies='1', cores=str(vcpus), threads='1'),
+                E.vendor(vcpu_vendor),
+                E.model(vcpu_model, fallback='forbid'),
+                E.topology(sockets='1', dies='1', cores=str(vcpus),
+                           threads='1'),
                 mode='custom',
                 match='exact',
                 check='partial',
@@ -77,25 +90,35 @@ class XMLConstructor:
                     type='file',
                     device='disk',
                 ),
+                E.interface(
+                    E.source(network='default'),
+                    E.mac(address=random_mac()),
+                    type='network',
+                ),
+                E.graphics(
+                    E.listen(type='address'),
+                    type='vnc', port='-1', autoport='yes'
+                ),
+                E.video(
+                    E.model(type='vga', vram='16384', heads='1', primary='yes'),
+                    E.address(type='pci', domain='0x0000', bus='0x00',
+                              slot='0x02', function='0x0'),
+                ),
             ),
             type='kvm',
         )
 
-    def gen_volume_xml(
-        self,
-        device_name: str,
-        file: Path,
-        bus: str = 'virtio',
-        cache: str = 'writethrough',
-        disktype: str = 'file',
-    ):
-        return E.disk(
-            E.driver(name='qemu', type='qcow2', cache=cache),
-            E.source(file=file),
-            E.target(dev=device_name, bus=bus),
-            type=disktype,
-            device='disk'
-        )
+    def gen_volume_xml(self,
+                       device_name: str,
+                       file: Path,
+                       bus: str = 'virtio',
+                       cache: str = 'writethrough',
+                       disktype: str = 'file'):
+        return E.disk(E.driver(name='qemu', type='qcow2', cache=cache),
+                      E.source(file=file),
+                      E.target(dev=device_name, bus=bus),
+                      type=disktype,
+                      device='disk')
 
     def add_volume(self):
         raise NotImplementedError()
@@ -111,21 +134,18 @@ class XMLConstructor:
                 data,
                 namespace=namespace,
                 nsprefix=nsprefix,
-            )
-        )
+            ))
         self.xml.replace(metadata_old, metadata)
 
     def remove_meta(self, namespace: str):
         """Remove metadata by namespace."""
         raise NotImplementedError()
 
-    def construct_xml(
-        self,
-        tag: dict,
-        namespace: str | None = None,
-        nsprefix: str | None = None,
-        root: Element = None,
-    ) -> Element:
+    def construct_xml(self,
+                      tag: dict,
+                      namespace: str | None = None,
+                      nsprefix: str | None = None,
+                      root: Element = None) -> Element:
         """
         Shortly this recursive function transforms dictonary to XML.
         Return etree.Element built from dict with following structure::
@@ -148,18 +168,13 @@ class XMLConstructor:
         # Create element
         if root is None:
             if use_ns:
-                element = Element(
-                    QName(namespace, tag['name']),
-                    nsmap={nsprefix: namespace},
-                )
+                element = Element(QName(namespace, tag['name']),
+                                  nsmap={nsprefix: namespace})
             else:
                 element = Element(tag['name'])
         else:
             if use_ns:
-                element = SubElement(
-                    root,
-                    QName(namespace, tag['name']),
-                )
+                element = SubElement(root, QName(namespace, tag['name']))
             else:
                 element = SubElement(root, tag['name'])
         # Fill up element with content
@@ -171,16 +186,12 @@ class XMLConstructor:
         if 'children' in tag.keys():
             for child in tag['children']:
                 element.append(
-                    self.construct_xml(
-                        child,
-                        namespace=namespace,
-                        nsprefix=nsprefix,
-                        root=element,
-                    )
-                )
+                    self.construct_xml(child,
+                                       namespace=namespace,
+                                       nsprefix=nsprefix,
+                                       root=element))
         return element
 
     def to_string(self):
-        return tostring(
-            self.xml, pretty_print=True, encoding='utf-8'
-        ).decode().strip()
+        return (tostring(self.xml, pretty_print=True,
+                         encoding='utf-8').decode().strip())

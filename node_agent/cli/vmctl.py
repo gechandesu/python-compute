@@ -13,14 +13,14 @@ Options:
     -9, --sigkill        Send SIGKILL to QEMU process. Not affects without --force
 """
 
-import sys
-import pathlib
 import logging
+import pathlib
+import sys
 
 import libvirt
 from docopt import docopt
 
-from ..main import LibvirtSession
+from ..session import LibvirtSession
 from ..vm import VirtualMachine, VMError, VMNotFound
 
 

@@ -10,13 +10,13 @@ Options:
     -t, --timeout <sec>  QEMU timeout in seconds to stop polling command status [default: 60]
 """
 
-import sys
-import pathlib
 import logging
+import pathlib
+import sys
 
 from docopt import docopt
 
-from ..main import LibvirtSession
+from ..session import LibvirtSession
 from ..vm import QemuAgent, QemuAgentError, VMNotFound
 
 
@@ -29,6 +29,8 @@ class Color:
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
     NONE = '\033[0m'
+
+# TODO: Add STDIN support e.g.: cat something.sh | na-vmexec vmname bash
 
 
 def cli():
@@ -50,50 +52,35 @@ def cli():
         try:
             ga = QemuAgent(session, machine)
             exited, exitcode, stdout, stderr = ga.shellexec(
-                cmd,
-                executable=shell,
-                capture_output=True,
-                decode_output=True,
-                timeout=int(args['--timeout']),
-            )
+                cmd, executable=shell, capture_output=True, decode_output=True,
+                timeout=int(args['--timeout']))
         except QemuAgentError as qemuerr:
-            errmsg = f'{Color.RED}{err}{Color.NONE}'
-            if str(err).startswith('Polling command pid='):
-                errmsg = (
-                    errmsg + Color.YELLOW
-                    + '\n[NOTE: command may still running]'
-                    + Color.NONE
-                )
+            errmsg = f'{Color.RED}{qemuerr}{Color.NONE}'
+            if str(qemuerr).startswith('Polling command pid='):
+                errmsg = (errmsg + Color.YELLOW +
+                          '\n[NOTE: command may still running]' + Color.NONE)
             sys.exit(errmsg)
         except VMNotFound as err:
-            sys.exit(
-                f'{Color.RED}VM {machine} not found.{Color.NONE}'
-            )
+            sys.exit(f'{Color.RED}VM {machine} not found{Color.NONE}')
 
     if not exited:
-        print(
-            Color.YELLOW
-            +'[NOTE: command may still running]'
-            + Color.NONE,
-            file=sys.stderr
-        )
+        print(Color.YELLOW + '[NOTE: command may still running]' + Color.NONE,
+              file=sys.stderr)
     else:
         if exitcode == 0:
             exitcolor = Color.GREEN
         else:
             exitcolor = Color.RED
-        print(
-            exitcolor
-            + f'[command exited with exit code {exitcode}]'
-            + Color.NONE,
-            file=sys.stderr
-        )
+        print(exitcolor + f'[command exited with exit code {exitcode}]' +
+              Color.NONE,
+              file=sys.stderr)
 
     if stderr:
         print(Color.RED + stderr.strip() + Color.NONE, file=sys.stderr)
     if stdout:
         print(Color.GREEN + stdout.strip() + Color.NONE, file=sys.stdout)
     sys.exit(exitcode)
+
 
 if __name__ == '__main__':
     cli()
