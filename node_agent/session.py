@@ -31,3 +31,21 @@ class LibvirtSession(AbstractContextManager):
 
     def close(self) -> None:
         self.session.close()
+
+    def list_domains(self):
+        return self.session.listAllDomains()
+
+    def get_domain(self, name: str) -> libvirt.virDomain:
+        try:
+            return self.session.lookupByName(name)
+        except libvirt.libvirtError as err:
+            if err.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+                raise VMNotFound(name)
+            else:
+                raise LibvirtSessionError(err)
+
+    def get_storage_pool(self, name: str) -> libvirt.virStoragePool:
+        try:
+            return self.session.storagePoolLookupByName(name)
+        except libvirt.libvirtError as err:
+            raise LibvirtSessionError(err)

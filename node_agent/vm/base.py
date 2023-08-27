@@ -1,22 +1,31 @@
 import libvirt
 
-from .exceptions import VMError, VMNotFound
+from .exceptions import VMError
 
 
 class VirtualMachineBase:
 
-    def __init__(self, session: 'LibvirtSession', name: str):
-        self.domname = name
-        self.session = session.session  # virConnect object
-        self.config = session.config  # ConfigLoader object
-        self.domain = self._get_domain(name)
+    def __init__(self, domain: libvirt.virDomain):
+        self.domain = domain
+        self.domain_name = self._get_domain_name()
+        self.domain_info = self._get_domain_info()
 
-    def _get_domain(self, name: str) -> libvirt.virDomain:
-        """Get virDomain object by name to manipulate with domain."""
+    def _get_domain_name(self):
         try:
-            domain = self.session.lookupByName(name)
-            if domain is not None:
-                return domain
-            raise VMNotFound(name)
+            return self.domain.name()
         except libvirt.libvirtError as err:
-            raise VMError(err) from err
+            raise VMError(f'Cannot get domain name: {err}') from err
+
+    def _get_domain_info(self):
+        # https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInfo
+        try:
+            info = self.domain.info()
+            return {
+                'state': info[0],
+                'max_memory': info[1],
+                'memory': info[2],
+                'nproc': info[3],
+                'cputime': info[4]
+            }
+        except libvirt.libvirtError as err:
+            raise VMError(f'Cannot get domain info: {err}') from err

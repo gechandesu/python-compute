@@ -1,6 +1,6 @@
-# Node Agent
+# Compute Node Agent
 
-Агент для работы на ворк-нодах.
+Агент для работы на ворк-нодах. В этом репозитории развивается базовая библиотека для взаимодействия с libvirt и выполнения основных операций.
 
 # Как это должно выглядеть
 
@@ -18,117 +18,54 @@
 - `python3-docopt` 0.6.2
 - `python3-libvirt` 9.0.0 (актуальная новее)
 
+`docopt` скорее всего будет выброшен в будущем, так как интерфейс CLI сильно усложнится.
+
 Минимальная поддерживаемая версия Python — `3.11`, потому, что можем.
 
-# Классы
+# API
 
-Весь пакет разбит на модули, а основной функционал на классы.
+Кодовая база растёт, необходимо автоматически генерировать документацию в README её больше небудет.
 
-## `ConfigLoader`
+В структуре проекта сейчас бардак, многое будет переосмыслено и переделано позже. Основная цель на текущем этапе — получить минимально работающий код, с помощью которого возможно выполнить установку виртуальной машины и как-то управлять ею.
 
-Наследуется от `UserDict`. Принимает в конструктор путь до файла, после чего экземпляром `ConfigLoader` можно пользоваться как обычным словарём. Вызывается внутри `LibvirtSession` при инициализации.
+Базовые сущности:
 
-## `LibvirtSession`
-
-Устанавливает сессию с libvirtd и создаёт объект virConnect. Класс умеет принимать в конструктор один аргумент — путь до файла конфигурации, но его можно опустить.
+- `LivbirtSession` - обёртка над объектом `libvirt.virConnect`.
+- `VirtualMachine` - класс для работы с доменами, через него выполняется большинство действий.
+- `VirtualMachineInstaller` - класс для установки ВМ, выполняет кучу проверок, генерирует XML конфиг и т.п.
+- `QemuAgent` - понятно что это.
+- `ConfigLoader` - загрузчик TOML-конфига, возможно будет выброшен на мороз.
 
 ```python
-from node_agent import LibvirtSession
+from na import LibvirtSession
+from na.vm import VirtualMachineInstaller
 
-session = LibvirtSession()
+
+session = LibvirtSession('config.toml')
+compute = VirtualMachineInstaller(session).install(
+    name='devuan',
+    vcpus=4,
+    vcpu_mode='host-model',
+    memory=2048,
+)
+print(compute)
 session.close()
 ```
-
-Также этот класс является контекстным менеджером и его можно использвоать так:
-
-```python
-from node_agent import LibvirtSession, VirtualMachine
-
-with LibvirtSession() as session:
-    vm = VirtualMachine(session, 'имя_вм')
-    vm.status
-```
-
-## `VirtualMachine`
-
-Класс для базового управления виртуалкой. В конструктор принимает объект LibvirtSession и создаёт объект `virDomain`.
-
-## `QemuAgent`
-
-Класс для работы с агентом на гостях. Инициализируется аналогично `VirtualMachine`. Его можно считать законченным. Он умеет:
-
-- Выполнять шелл команды через метод `shellexec()`.
-- Выполнять любые команды QEMU через `execute()`.
-
-Также способен:
-
-- Поллить выполнение команды. То есть можно дождаться вывода долгой команды.
-- Декодировать base64 вывод STDERR и STDOUT если надо.
-- Отправлять данные на STDIN.
-
-## `XMLConstructor`
-
-Класс для генерации XML конфигов для либвирта и редактирования XML. Пока умеет очень мало и требует перепиливания. Возможно стоит разбить его на несколько классов. Пример работы с ним:
-
-```python
-from node_agent.xml import XMLConstructor
-
-domain_xml = XMLConstructor()
-domain_xml.gen_domain_xml(
-    name='13',
-    title='',
-    vcpus=2,
-    cpu_vendor='Intel',
-    cpu_model='Broadwell',
-    memory=2048,
-    volume='/srv/vm-volumes/ef0bcd68-02c2-4f31-ae96-14d2bda5a97b.qcow2',
-)
-tags_meta = {
-    'name': 'tags',
-    'children': [
-        {'name': 'god_mode'},
-        {'name': 'service'}
-    ]
-}
-domain_xml.add_meta(tags_meta, namespace='http://half-it-stack.org/xmlns/tags-meta', nsprefix='tags')
-print(domain_xml.to_string())
-```
-
-В итоге должен получиться какой-то конфиг для ВМ.
-
-Имеет метод `construct_xml()`, который позволяет привести словарь Python в XML элемент (обхект `lxml.etree.Element`). Пример:
-
-```python
->>> from lxml.etree import tostring
->>> from na.xml import XMLConstructor
->>> xml = XMLConstructor()
->>> tag = {
-...     'name': 'mytag',
-...     'values': {
-...             'firstname': 'John',
-...             'lastname': 'Doe'
-...     },
-...     'text': 'Hello!',
-...     'children': [{'name': 'okay'}]
-... }
->>> element = xml.construct_xml(tag)
->>> print(tostring(element).decode())
-'<mytag firstname="John" lastname="Doe">Hello!<okay/></mytag>'
->>>
-```
-
-Функция рекурсивная, так что теоретически можно положить бесконечное число вложенных элементов в `children`. С аргументами `namespace` и `nsprefix` будет сгенерирован XML с неймспейсом, Ваш кэп.
 
 # TODO
 
 - [ ] Установка ВМ
     - [x] Конструктор XML (базовый)
+    - [x] Автоматический выбор модели процессора
     - [ ] Метод создания дисков
-    - [ ] Дефайн, запуск и автостарт ВМ
+    - [x] Дефайн, запуск и автостарт ВМ
+    - [ ] Работа со StoragePool
+    - [ ] Создание блочных устройств
+    - [ ] Подключение/отключение устройств
 - [ ] Управление дисками
 - [ ] Удаление ВМ
-- [ ] Изменение CPU
-- [ ] Изменение RAM
+- [x] Изменение CPU
+- [x] Изменение RAM
 - [ ] Миграция ВМ между нодами
 - [x] Работа с qemu-ga
 - [x] Управление питанием
@@ -138,11 +75,20 @@ print(domain_xml.to_string())
 - [ ] SSH-ключи
 - [ ] Сеть
 - [ ] Создание снапшотов
+- [ ] Поддержка выделения гарантированной доли CPU
 
 # Заметки
 
-xml.py наверное лучше реализовать через lxml.objectify: https://stackoverflow.com/questions/47304314/adding-child-element-to-xml-in-python
+## Будущее этой библиотеки
 
-???: https://www.geeksforgeeks.org/reading-and-writing-xml-files-in-python/
+Либа 
 
-Минимальный рабочий XML: https://access.redhat.com/documentation/ru-ru/red_hat_enterprise_linux/6/html/virtualization_administration_guide/section-libvirt-dom-xml-example
+## Failover
+
+В перспективе для ВМ с сетевыми дисками возможно организовать Failover решение — ВМ будет автоматически запускаться на другой ноде из пула при отключении оригинальной ноды. Технически это можно реализовать как создание ВМ с аналогичными характеристиками на другой ноде с подключением к тому же самому сетевому диску. Сразу нужно отметить, что для реализации:
+
+- Нужно где-то хранить и регулярно обновлять информацию о конфигурации ВМ для воссоздания ВМ
+- Нужно иметь "плавающие адреса", чтобы переключить трафик на новую ноду
+- Необходимо выполнять failover по чётким критериям: нода полностью недоступна более X времени, маунт сетевого диска отвалился и т.п.
+- Как быть с целостностью данных на сетевом диске? При аварии на ноде, данные могли быть повреждены, тогда failover на тот же диск ничего не даст.
+- Сетевой диск должен быть зарезервирован средствами распределённой ФС

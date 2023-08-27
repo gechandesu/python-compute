@@ -1,3 +1,5 @@
 from .exceptions import *
-from .ga import QemuAgent
-from .main import VirtualMachine
+from .guest_agent import QemuAgent
+from .virtual_machine import VirtualMachine
+from .installer import VirtualMachineInstaller
+from .hardware import vCPUMode, vCPUTopology

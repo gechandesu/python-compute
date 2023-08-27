@@ -13,7 +13,7 @@ class VirtualMachine(VirtualMachineBase):
 
     @property
     def name(self):
-        return self.domname
+        return self.domain_name
 
     @property
     def status(self) -> str:
@@ -27,7 +27,7 @@ class VirtualMachine(VirtualMachineBase):
             state = self.domain.state()[0]
         except libvirt.libvirtError as err:
             raise VMError(
-                f'Cannot fetch VM status vm={self.domname}: {err}') from err
+                f'Cannot fetch VM status vm={self.domain_name}: {err}') from err
         STATES = {
             libvirt.VIR_DOMAIN_NOSTATE: 'nostate',
             libvirt.VIR_DOMAIN_RUNNING: 'running',
@@ -57,20 +57,21 @@ class VirtualMachine(VirtualMachineBase):
             return False
         except libvirt.libvirtError as err:
             raise VMError(
-                f'Cannot get autostart status vm={self.domname}: {err}'
+                f'Cannot get autostart status vm={self.domain_name}: {err}'
             ) from err
 
     def start(self) -> None:
         """Start defined VM."""
-        logger.info('Starting VM: vm=%s', self.domname)
+        logger.info('Starting VM: vm=%s', self.domain_name)
         if self.is_running:
-            logger.debug('VM vm=%s is already started, nothing to do',
-                         self.domname)
+            logger.warning('VM vm=%s is already started, nothing to do',
+                         self.domain_name)
             return
         try:
             self.domain.create()
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot start vm={self.domname}: {err}') from err
+            raise VMError(
+                f'Cannot start vm={self.domain_name}: {err}') from err
 
     def shutdown(self, mode: str | None = None) -> None:
         """
@@ -78,7 +79,7 @@ class VirtualMachine(VirtualMachineBase):
         * GUEST_AGENT - use guest agent
         * NORMAL - use method choosen by hypervisor to shutdown machine
         * SIGTERM - send SIGTERM to QEMU process, destroy machine gracefully
-        * SIGKILL - send SIGKILL, this option may corrupt guest data!
+        * SIGKILL - send SIGKILL to QEMU process. May corrupt guest data!
         If mode is not passed use 'NORMAL' mode.
         """
         MODES = {
@@ -90,7 +91,7 @@ class VirtualMachine(VirtualMachineBase):
         if mode is None:
             mode = 'NORMAL'
         if not isinstance(mode, str):
-            raise ValueError(f'Mode must be a string, not {type(mode)}')
+            raise ValueError(f"Mode must be a 'str', not {type(mode)}")
         if mode.upper() not in MODES:
             raise ValueError(f"Unsupported mode: '{mode}'")
         try:
@@ -99,7 +100,7 @@ class VirtualMachine(VirtualMachineBase):
             elif mode in ['SIGTERM', 'SIGKILL']:
                 self.domain.destroyFlags(flags=MODES.get(mode))
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot shutdown vm={self.domname} with '
+            raise VMError(f'Cannot shutdown vm={self.domain_name} with '
                           f'mode={mode}: {err}') from err
 
     def reset(self) -> None:
@@ -116,16 +117,18 @@ class VirtualMachine(VirtualMachineBase):
         try:
             self.domain.reset()
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot reset vm={self.domname}: {err}') from err
+            raise VMError(
+                f'Cannot reset vm={self.domain_name}: {err}') from err
 
     def reboot(self) -> None:
         """Send ACPI signal to guest OS to reboot. OS may ignore this."""
         try:
             self.domain.reboot()
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot reboot vm={self.domname}: {err}') from err
+            raise VMError(
+                f'Cannot reboot vm={self.domain_name}: {err}') from err
 
-    def autostart(self, enable: bool) -> None:
+    def set_autostart(self, enable: bool) -> None:
         """
         Configure VM to be automatically started when the host machine boots.
         """
@@ -136,13 +139,57 @@ class VirtualMachine(VirtualMachineBase):
         try:
             self.domain.setAutostart(autostart_flag)
         except libvirt.libvirtError as err:
-            raise VMError(f'Cannot set autostart vm={self.domname} '
+            raise VMError(f'Cannot set autostart vm={self.domain_name} '
                           f'autostart={autostart_flag}: {err}') from err
 
-    def set_vcpus(self, count: int):
+    def set_vcpus(self, nvcpus: int, hotplug: bool = False):
+        """
+        Set vCPUs for VM. If `hotplug` is True set vCPUs on running VM.
+        If VM is not running set `hotplug` to False. If `hotplug` is True
+        and VM is not currently running vCPUs will set in config and will
+        applied when machine boot.
+
+        NB: Note that if this call is executed before the guest has
+        finished booting, the guest may fail to process the change.
+        """
+        if nvcpus == 0:
+            raise VMError(f'Cannot set zero vCPUs vm={self.domain_name}')
+        if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+                     libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        else:
+            flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
+        try:
+            self.domain.setVcpusFlags(nvcpus, flags=flags)
+        except libvirt.libvirtError as err:
+            raise VMError(
+                f'Cannot set vCPUs for vm={self.domain_name}: {err}') from err
+
+    def set_memory(self, memory: int, hotplug: bool = False):
+        """
+        Set momory for VM. `memory` must be passed in mebibytes. Internally
+        converted to kibibytes. If `hotplug` is True set memory for running
+        VM, else set memory in config and will applied when machine boot.
+        If `hotplug` is True and machine is not currently running set memory
+        in config.
+        """
+        if memory == 0:
+            raise VMError(f'Cannot set zero memory vm={self.domain_name}')
+        if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+                     libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        else:
+            flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
+        try:
+            self.domain.setVcpusFlags(memory * 1024, flags=flags)
+        except libvirt.libvirtError as err:
+            raise VMError(
+                f'Cannot set memory for vm={self.domain_name}: {err}') from err
+
+    def attach_device(self, device: str):
         pass
 
-    def set_ram(self, count: int):
+    def detach_device(self, device: str):
         pass
 
     def list_ssh_keys(self, user: str):
@@ -156,3 +203,11 @@ class VirtualMachine(VirtualMachineBase):
 
     def set_user_password(self, user: str):
         pass
+
+    def dump_xml(self) -> str:
+        return self.domain.XMLDesc()
+
+    def delete(self, delete_volumes: bool = False):
+        """Undefine VM."""
+        self.shutdown(method='SIGTERM')
+        self.domain.undefine()

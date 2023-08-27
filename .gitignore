@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
 *~
-domain.xml
-domgen.py
+dom*
 na
 dist/
 P@ssw0rd

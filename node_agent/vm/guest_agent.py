@@ -12,8 +12,9 @@ from .exceptions import QemuAgentError
 
 logger = logging.getLogger(__name__)
 
-QEMU_TIMEOUT = 60  # seconds
-POLL_INTERVAL = 0.3  # also seconds
+# Note that if no QEMU_TIMEOUT libvirt cannot connect to agent
+QEMU_TIMEOUT = 60  # in seconds
+POLL_INTERVAL = 0.3  # also in seconds
 
 
 class QemuAgent(VirtualMachineBase):
@@ -28,12 +29,9 @@ class QemuAgent(VirtualMachineBase):
         must be passed as string. Wraps execute() method.
     """
 
-    def __init__(self,
-                 session: 'LibvirtSession',
-                 name: str,
-                 timeout: int | None = None,
+    def __init__(self, domain: libvirt.virDomain, timeout: int | None = None,
                  flags: int | None = None):
-        super().__init__(session, name)
+        super().__init__(domain)
         self.timeout = timeout or QEMU_TIMEOUT  # timeout for guest agent
         self.flags = flags or libvirt_qemu.VIR_DOMAIN_QEMU_MONITOR_COMMAND_DEFAULT
 
@@ -110,7 +108,11 @@ class QemuAgent(VirtualMachineBase):
         )
 
     def _execute(self, command: dict):
-        logging.debug('Execute command: vm=%s cmd=%s', self.domname, command)
+        logging.debug('Execute command: vm=%s cmd=%s', self.domain_name,
+                      command)
+        if self.domain_info['state'] != libvirt.VIR_DOMAIN_RUNNING:
+            raise GuestAgentError(
+                f'Cannot execute command: vm={self.domain_name} is not running')
         try:
             return libvirt_qemu.qemuAgentCommand(
                 self.domain,  # virDomain object
@@ -119,7 +121,9 @@ class QemuAgent(VirtualMachineBase):
                 self.flags,
             )
         except libvirt.libvirtError as err:
-            raise QemuAgentError(err) from err
+            raise QemuAgentError(
+                    f'Cannot execute command on vm={self.domain_name}: {err}'
+                ) from err
 
     def _get_cmd_result(
             self, pid: int, decode_output: bool = False, wait: bool = True,
@@ -131,7 +135,8 @@ class QemuAgent(VirtualMachineBase):
             output = json.loads(self._execute(cmd))
             return self._return_tuple(output, decode=decode_output)
 
-        logger.debug('Start polling command pid=%s', pid)
+        logger.debug('Start polling command pid=%s on vm=%s', pid,
+                     self.domain_name)
         start_time = time()
         while True:
             output = json.loads(self._execute(cmd))
@@ -141,10 +146,12 @@ class QemuAgent(VirtualMachineBase):
             now = time()
             if now - start_time > timeout:
                 raise QemuAgentError(
-                    f'Polling command pid={pid} took longer than {timeout} seconds.'
+                    f'Polling command pid={pid} on vm={self.domain_name} '
+                    f'took longer than {timeout} seconds.'
                 )
-        logger.debug('Polling command pid=%s finished, time taken: %s seconds',
-                     pid, int(time() - start_time))
+        logger.debug('Polling command pid=%s on vm=%s finished, '
+                     'time taken: %s seconds',
+                     pid, self.domain_name, int(time() - start_time))
         return self._return_tuple(output, decode=decode_output)
 
     def _return_tuple(self, output: dict, decode: bool = False):

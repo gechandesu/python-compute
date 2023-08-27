@@ -8,7 +8,7 @@ NODEAGENT_CONFIG_FILE = os.getenv('NODEAGENT_CONFIG_FILE')
 NODEAGENT_DEFAULT_CONFIG_FILE = '/etc/node-agent/config.toml'
 
 
-class ConfigLoadError(Exception):
+class ConfigLoaderError(Exception):
     """Bad config file syntax, unreachable file or bad config schema."""
 
 
@@ -27,11 +27,11 @@ class ConfigLoader(UserDict):
                 return tomllib.load(config)
                 # todo: config schema validation
         except tomllib.TOMLDecodeError as tomlerr:
-            raise ConfigLoadError(
+            raise ConfigLoaderError(
                 f'Bad TOML syntax in config file: {self.file}: {tomlerr}'
             ) from tomlerr
         except (OSError, ValueError) as readerr:
-            raise ConfigLoadError(
+            raise ConfigLoaderError(
                 f'Cannot read config file: {self.file}: {readerr}') from readerr
 
     def reload(self):

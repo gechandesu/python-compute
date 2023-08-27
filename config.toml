@@ -1,35 +1,29 @@
-[general]
-# Наверное стоит создавать локи в виде файлов во время операций с ВМ
-# /var/node-agent/locks/vms/{vm}
-locks_dir = '/var/node-agent/locks'
-
 [libvirt]
-uri = 'qemu:///system'
+uri = 'qemu:///session'
 
 [logging]
 level = 'INFO'
+driver = 'file'
 file = '/var/log/node-agent.log'
 
-[volumes]
-
-[[volumes.pools]]
+[[storages.pools]]
 name = 'ssd-nvme'
 enabled = true
 default = true
 path = '/srv/vm-volumes/ssd-nvme'
 
-[[volumes.pools]]
+[[storages.pools]]
 name = 'hdd'
 enabled = true
 path = '/srv/vm-volumes/hdd'
 
-[vms.defaults]
-# Какие-то значения по-умолчанию, используемые при создании/работе с ВМ
-# Эти параметры также будут аффектить на CLI утилиты
-autostart = true  # ставить виртуалки в автостарт после установки
-start = true  # запускать ВМ после установки
+[[storages.pools]]
+name = 'images'
+enabled = true
+path = '/srv/vm-images/vendor'
+
+[virtual_machine.defaults]
+autostart = true
+start = true
 cpu_vendor = 'Intel'
 cpu_model = 'Broadwell'
-
-[vms.images]
-path = '/srv/vm-images'
