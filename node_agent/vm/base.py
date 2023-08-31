@@ -17,7 +17,6 @@ class VirtualMachineBase:
             raise VMError(f'Cannot get domain name: {err}') from err
 
     def _get_domain_info(self):
-        # https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInfo
         try:
             info = self.domain.info()
             return {

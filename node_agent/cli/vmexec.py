@@ -14,14 +14,18 @@ import logging
 import pathlib
 import sys
 
+import libvirt
 from docopt import docopt
 
 from ..session import LibvirtSession
-from ..vm import QemuAgent, QemuAgentError, VMNotFound
+from ..vm import GuestAgent, GuestAgentError, VMNotFound
 
 
 logger = logging.getLogger(__name__)
 levels = logging.getLevelNamesMapping()
+
+# Supress libvirt errors
+libvirt.registerErrorHandler(lambda userdata, err: None, ctx=None)
 
 
 class Color:
@@ -45,16 +49,16 @@ def cli():
     if loglvl in levels:
         logging.basicConfig(level=levels[loglvl])
 
-    with LibvirtSession(config) as session:
+    with LibvirtSession() as session:
         shell = args['--shell']
         cmd = args['<command>']
 
         try:
-            ga = QemuAgent(session, machine)
+            ga = session.get_guest_agent(machine)
             exited, exitcode, stdout, stderr = ga.shellexec(
                 cmd, executable=shell, capture_output=True, decode_output=True,
                 timeout=int(args['--timeout']))
-        except QemuAgentError as qemuerr:
+        except GuestAgentError as qemuerr:
             errmsg = f'{Color.RED}{qemuerr}{Color.NONE}'
             if str(qemuerr).startswith('Polling command pid='):
                 errmsg = (errmsg + Color.YELLOW +

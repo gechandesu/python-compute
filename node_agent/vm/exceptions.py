@@ -1,4 +1,4 @@
-class QemuAgentError(Exception):
+class GuestAgentError(Exception):
     """Mostly QEMU Guest Agent is not responding."""
 
 

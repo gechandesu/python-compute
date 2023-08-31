@@ -4,7 +4,7 @@ Manage virtual machines.
 Usage:  na-vmctl [options] status <machine>
         na-vmctl [options] is-running <machine>
         na-vmctl [options] start <machine>
-        na-vmctl [options] shutdown <machine> [-f|--force] [-9|--sigkill]
+        na-vmctl [options] shutdown <machine>
         na-vmctl [options] set-vcpus <machine> <nvcpus>
         na-vmctl [options] set-memory <machine> <memory>
         na-vmctl [options] list [-a|--all]
@@ -30,6 +30,9 @@ from ..vm import VirtualMachine, VMError, VMNotFound
 
 logger = logging.getLogger(__name__)
 levels = logging.getLevelNamesMapping()
+
+# Supress libvirt errors
+libvirt.registerErrorHandler(lambda userdata, err: None, ctx=None)
 
 
 class Color:
@@ -89,19 +92,17 @@ def cli():
     if loglvl in levels:
         logging.basicConfig(level=levels[loglvl])
 
-    with LibvirtSession(config) as session:
+    with LibvirtSession() as session:
         try:
             if args['list']:
-                vms = session.list_domains()
                 table = Table()
                 table.header(['NAME', 'STATE', 'AUTOSTART'])
-                for vm_ in vms:
-                    vm_ = VirtualMachine(vm_)
+                for vm_ in session.list_machines():
                     table.row([vm_.name, vm_.status, vm_.is_autostart])
                 table.print()
                 sys.exit()
 
-            vm = VirtualMachine(session, machine)
+            vm = session.get_machine(machine)
             if args['status']:
                 print(vm.status)
             if args['is-running']:
@@ -113,7 +114,7 @@ def cli():
                 vm.start()
                 print(f'{vm.name} started')
             if args['shutdown']:
-                vm.shutdown(force=args['--force'], sigkill=args['sigkill'])
+                vm.shutdown('NORMAL')
         except VMNotFound as nferr:
             sys.exit(f'{Color.RED}VM {machine} not found.{Color.NONE}')
         except VMError as vmerr:

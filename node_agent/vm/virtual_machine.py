@@ -2,6 +2,7 @@ import logging
 
 import libvirt
 
+from ..volume import VolumeInfo
 from .base import VirtualMachineBase
 from .exceptions import VMError
 
@@ -65,7 +66,7 @@ class VirtualMachine(VirtualMachineBase):
         logger.info('Starting VM: vm=%s', self.domain_name)
         if self.is_running:
             logger.warning('VM vm=%s is already started, nothing to do',
-                         self.domain_name)
+                           self.domain_name)
             return
         try:
             self.domain.create()
@@ -73,7 +74,7 @@ class VirtualMachine(VirtualMachineBase):
             raise VMError(
                 f'Cannot start vm={self.domain_name}: {err}') from err
 
-    def shutdown(self, mode: str | None = None) -> None:
+    def shutdown(self, method: str | None = None) -> None:
         """
         Send signal to guest OS to shutdown. Supports several modes:
         * GUEST_AGENT - use guest agent
@@ -82,26 +83,26 @@ class VirtualMachine(VirtualMachineBase):
         * SIGKILL - send SIGKILL to QEMU process. May corrupt guest data!
         If mode is not passed use 'NORMAL' mode.
         """
-        MODES = {
+        METHODS = {
             'GUEST_AGENT': libvirt.VIR_DOMAIN_SHUTDOWN_GUEST_AGENT,
             'NORMAL': libvirt.VIR_DOMAIN_SHUTDOWN_DEFAULT,
             'SIGTERM': libvirt.VIR_DOMAIN_DESTROY_GRACEFUL,
             'SIGKILL': libvirt.VIR_DOMAIN_DESTROY_DEFAULT
         }
-        if mode is None:
-            mode = 'NORMAL'
-        if not isinstance(mode, str):
-            raise ValueError(f"Mode must be a 'str', not {type(mode)}")
-        if mode.upper() not in MODES:
-            raise ValueError(f"Unsupported mode: '{mode}'")
+        if method is None:
+            method = 'NORMAL'
+        if not isinstance(method, str):
+            raise ValueError(f"Mode must be a 'str', not {type(method)}")
+        if method.upper() not in METHODS:
+            raise ValueError(f"Unsupported mode: '{method}'")
         try:
-            if mode in ['GUEST_AGENT', 'NORMAL']:
-                self.domain.shutdownFlags(flags=MODES.get(mode))
-            elif mode in ['SIGTERM', 'SIGKILL']:
-                self.domain.destroyFlags(flags=MODES.get(mode))
+            if method in ['GUEST_AGENT', 'NORMAL']:
+                self.domain.shutdownFlags(flags=METHODS.get(method))
+            elif method in ['SIGTERM', 'SIGKILL']:
+                self.domain.destroyFlags(flags=METHODS.get(method))
         except libvirt.libvirtError as err:
             raise VMError(f'Cannot shutdown vm={self.domain_name} with '
-                          f'mode={mode}: {err}') from err
+                          f'method={method}: {err}') from err
 
     def reset(self) -> None:
         """
@@ -186,10 +187,26 @@ class VirtualMachine(VirtualMachineBase):
             raise VMError(
                 f'Cannot set memory for vm={self.domain_name}: {err}') from err
 
-    def attach_device(self, device: str):
-        pass
+    def attach_device(self, dev_xml: str, hotplug: bool = False):
+        if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+                     libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        else:
+            flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
+        self.domain.attachDeviceFlags(dev_xml, flags=flags)
 
-    def detach_device(self, device: str):
+    def detach_device(self, dev_xml: str, hotplug: bool = False):
+        if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+                     libvirt.VIR_DOMAIN_AFFECT_CONFIG)
+        else:
+            flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
+        self.domain.detachDeviceFlags(dev_xml, flags=flags)
+
+    def resize_volume(self, vol_info: VolumeInfo, online: bool = False):
+        # Этот метод должен принимать описание волюма и в зависимости от
+        # флага online вызывать virStorageVolResize или virDomainBlockResize
+        # https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainBlockResize
         pass
 
     def list_ssh_keys(self, user: str):
@@ -201,8 +218,8 @@ class VirtualMachine(VirtualMachineBase):
     def remove_ssh_keys(self, user: str):
         pass
 
-    def set_user_password(self, user: str):
-        pass
+    def set_user_password(self, user: str, password: str):
+        self.domain.setUserPassword(user, password)
 
     def dump_xml(self) -> str:
         return self.domain.XMLDesc()

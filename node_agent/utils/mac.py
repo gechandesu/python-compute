@@ -8,9 +8,3 @@ def random_mac() -> str:
            random.randint(0x00, 0xff),
            random.randint(0x00, 0xff)]
     return ':'.join(map(lambda x: "%02x" % x, mac))
-
-
-def unique_mac() -> str:
-    """Return non-conflicting MAC address."""
-    # todo: see virtinst.DeviceInterface.generate_mac
-    raise NotImplementedError()

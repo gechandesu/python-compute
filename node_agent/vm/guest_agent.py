@@ -7,17 +7,16 @@ import libvirt
 import libvirt_qemu
 
 from .base import VirtualMachineBase
-from .exceptions import QemuAgentError
+from .exceptions import GuestAgentError
 
 
 logger = logging.getLogger(__name__)
 
-# Note that if no QEMU_TIMEOUT libvirt cannot connect to agent
 QEMU_TIMEOUT = 60  # in seconds
 POLL_INTERVAL = 0.3  # also in seconds
 
 
-class QemuAgent(VirtualMachineBase):
+class GuestAgent(VirtualMachineBase):
     """
     Interacting with QEMU guest agent. Methods:
 
@@ -47,7 +46,7 @@ class QemuAgent(VirtualMachineBase):
         Execute command on guest and return output if `capture_output` is True.
         See https://wiki.qemu.org/Documentation/QMP for QEMU commands reference.
         If `wait` is True poll guest command output with POLL_INTERVAL. Raise
-        QemuAgentError on `timeout` reached (in seconds).
+        GuestAgentError on `timeout` reached (in seconds).
         Return values:
             tuple(
                 exited: bool | None,
@@ -121,9 +120,9 @@ class QemuAgent(VirtualMachineBase):
                 self.flags,
             )
         except libvirt.libvirtError as err:
-            raise QemuAgentError(
-                    f'Cannot execute command on vm={self.domain_name}: {err}'
-                ) from err
+            raise GuestAgentError(
+                f'Cannot execute command on vm={self.domain_name}: {err}'
+            ) from err
 
     def _get_cmd_result(
             self, pid: int, decode_output: bool = False, wait: bool = True,
@@ -145,7 +144,7 @@ class QemuAgent(VirtualMachineBase):
             sleep(POLL_INTERVAL)
             now = time()
             if now - start_time > timeout:
-                raise QemuAgentError(
+                raise GuestAgentError(
                     f'Polling command pid={pid} on vm={self.domain_name} '
                     f'took longer than {timeout} seconds.'
                 )

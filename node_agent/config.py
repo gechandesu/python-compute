@@ -21,7 +21,7 @@ class ConfigLoader(UserDict):
         super().__init__(self._load())
         # todo: load deafult configuration
 
-    def _load(self):
+    def _load(self) -> dict:
         try:
             with open(self.file, 'rb') as config:
                 return tomllib.load(config)
@@ -34,5 +34,5 @@ class ConfigLoader(UserDict):
             raise ConfigLoaderError(
                 f'Cannot read config file: {self.file}: {readerr}') from readerr
 
-    def reload(self):
+    def reload(self) -> None:
         self.data = self._load()
