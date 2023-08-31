@@ -33,7 +33,10 @@
 - `LivbirtSession` - обёртка над объектом `libvirt.virConnect`.
 - `VirtualMachine` - класс для работы с доменами, через него выполняется большинство действий.
 - `VirtualMachineInstaller` - класс для установки ВМ, выполняет кучу проверок, генерирует XML конфиг и т.п.
-- `QemuAgent` - понятно что это.
+- `StoragePool` - обёртка для `libvirt.virStoragePool`.
+- `Volume` - объект для управления дисками.
+- `VolumeInfo` - датакласс хранящий информацию о диске, может собрать XML.
+- `GuestAgent` - понятно что это.
 - `ConfigLoader` - загрузчик TOML-конфига, возможно будет выброшен на мороз.
 
 ```python
