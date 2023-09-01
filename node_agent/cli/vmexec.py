@@ -4,10 +4,11 @@ Execute shell commands on guest via guest agent.
 Usage:  na-vmexec [options] <machine> <command>
 
 Options:
-    -c, --config <file>  Config file [default: /etc/node-agent/config.yaml]
-    -l, --loglvl <lvl>   Logging level
-    -s, --shell <shell>  Guest shell [default: /bin/sh]
+    -c, --config <file>  config file [default: /etc/node-agent/config.yaml]
+    -l, --loglvl <lvl>   logging level
+    -s, --shell <shell>  guest shell [default: /bin/sh]
     -t, --timeout <sec>  QEMU timeout in seconds to stop polling command status [default: 60]
+    -p, --pid <PID>      PID on guest to poll output
 """
 
 import logging
@@ -18,13 +19,13 @@ import libvirt
 from docopt import docopt
 
 from ..session import LibvirtSession
-from ..vm import GuestAgent, GuestAgentError, VMNotFound
+from ..vm import GuestAgent
+from ..exceptions import GuestAgentError, VMNotFound
 
 
 logger = logging.getLogger(__name__)
 levels = logging.getLevelNamesMapping()
 
-# Supress libvirt errors
 libvirt.registerErrorHandler(lambda userdata, err: None, ctx=None)
 
 
@@ -58,31 +59,24 @@ def cli():
             exited, exitcode, stdout, stderr = ga.shellexec(
                 cmd, executable=shell, capture_output=True, decode_output=True,
                 timeout=int(args['--timeout']))
-        except GuestAgentError as qemuerr:
-            errmsg = f'{Color.RED}{qemuerr}{Color.NONE}'
-            if str(qemuerr).startswith('Polling command pid='):
+        except GuestAgentError as gaerr:
+            errmsg = f'{Color.RED}{gaerr}{Color.NONE}'
+            if str(gaerr).startswith('Polling command pid='):
                 errmsg = (errmsg + Color.YELLOW +
-                          '\n[NOTE: command may still running]' + Color.NONE)
+                          '\n[NOTE: command may still running on guest '
+                          'pid={ga.last_pid}]' + Color.NONE)
             sys.exit(errmsg)
         except VMNotFound as err:
             sys.exit(f'{Color.RED}VM {machine} not found{Color.NONE}')
 
     if not exited:
-        print(Color.YELLOW + '[NOTE: command may still running]' + Color.NONE,
-              file=sys.stderr)
-    else:
-        if exitcode == 0:
-            exitcolor = Color.GREEN
-        else:
-            exitcolor = Color.RED
-        print(exitcolor + f'[command exited with exit code {exitcode}]' +
-              Color.NONE,
-              file=sys.stderr)
-
+        print(Color.YELLOW +
+              '[NOTE: command may still running on guest pid={ga.last_pid}]' +
+              Color.NONE, file=sys.stderr)
     if stderr:
-        print(Color.RED + stderr.strip() + Color.NONE, file=sys.stderr)
+        print(stderr.strip(), file=sys.stderr)
     if stdout:
-        print(Color.GREEN + stdout.strip() + Color.NONE, file=sys.stdout)
+        print(stdout.strip(), file=sys.stdout)
     sys.exit(exitcode)
 
 

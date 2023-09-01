@@ -6,8 +6,8 @@ from time import sleep, time
 import libvirt
 import libvirt_qemu
 
+from ..exceptions import GuestAgentError
 from .base import VirtualMachineBase
-from .exceptions import GuestAgentError
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class GuestAgent(VirtualMachineBase):
         super().__init__(domain)
         self.timeout = timeout or QEMU_TIMEOUT  # timeout for guest agent
         self.flags = flags or libvirt_qemu.VIR_DOMAIN_QEMU_MONITOR_COMMAND_DEFAULT
+        self.last_pid = None
 
     def execute(self,
                 command: dict,
@@ -68,9 +69,9 @@ class GuestAgent(VirtualMachineBase):
         cmd_out = self._execute(command)
 
         if capture_output:
-            cmd_pid = json.loads(cmd_out)['return']['pid']
+            self.last_pid = json.loads(cmd_out)['return']['pid']
             return self._get_cmd_result(
-                cmd_pid,
+                self.last_pid,
                 decode_output=decode_output,
                 wait=wait,
                 timeout=timeout,
@@ -105,6 +106,10 @@ class GuestAgent(VirtualMachineBase):
             wait=wait,
             timeout=timeout,
         )
+
+    def poll_pid(self, pid: int):
+        # Нужно цепляться к PID и вывести результат
+        pass
 
     def _execute(self, command: dict):
         logging.debug('Execute command: vm=%s cmd=%s', self.domain_name,

@@ -1,6 +1,6 @@
 import libvirt
 
-from .exceptions import VMError
+from ..exceptions import VMError
 
 
 class VirtualMachineBase:

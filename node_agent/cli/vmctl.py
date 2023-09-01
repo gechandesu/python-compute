@@ -10,11 +10,9 @@ Usage:  na-vmctl [options] status <machine>
         na-vmctl [options] list [-a|--all]
 
 Options:
-    -c, --config <file>  Config file [default: /etc/node-agent/config.yaml]
-    -l, --loglvl <lvl>   Logging level
-    -a, --all            List all machines including inactive
-    -f, --force          Force action. On shutdown calls graceful destroy()
-    -9, --sigkill        Send SIGKILL to QEMU process. Not affects without --force
+    -c, --config <file>  config file [default: /etc/node-agent/config.yaml]
+    -l, --loglvl <lvl>   logging level
+    -a, --all            list all machines including inactive
 """
 
 import logging
@@ -25,13 +23,13 @@ import libvirt
 from docopt import docopt
 
 from ..session import LibvirtSession
-from ..vm import VirtualMachine, VMError, VMNotFound
+from ..vm import VirtualMachine
+from ..exceptions import VMError, VMNotFound
 
 
 logger = logging.getLogger(__name__)
 levels = logging.getLevelNamesMapping()
 
-# Supress libvirt errors
 libvirt.registerErrorHandler(lambda userdata, err: None, ctx=None)
 
 
@@ -43,21 +41,6 @@ class Color:
 
 
 class Table:
-    """Print table. Example::
-
-        t = Table()
-        t.header(['KEY', 'VALUE'])  # header is optional
-        t.row(['key 1', 'value 1'])
-        t.row(['key 2', 'value 2'])
-        t.rows(
-            [
-                ['key 3', 'value 3'],
-                ['key 4', 'value 4']
-            ]
-        )
-        t.print()
-
-    """
 
     def __init__(self, whitespace: str = '\t'):
         self.__rows = []

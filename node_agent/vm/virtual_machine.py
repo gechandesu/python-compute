@@ -2,9 +2,9 @@ import logging
 
 import libvirt
 
+from ..exceptions import VMError
 from ..volume import VolumeInfo
 from .base import VirtualMachineBase
-from .exceptions import VMError
 
 
 logger = logging.getLogger(__name__)

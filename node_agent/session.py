@@ -2,12 +2,9 @@ from contextlib import AbstractContextManager
 
 import libvirt
 
-from .vm import GuestAgent, VirtualMachine, VMNotFound
+from .vm import GuestAgent, VirtualMachine
 from .volume import StoragePool
-
-
-class LibvirtSessionError(Exception):
-    """Something went wrong while connecting to libvirtd."""
+from .exceptions import LibvirtSessionError, VMNotFound
 
 
 class LibvirtSession(AbstractContextManager):
