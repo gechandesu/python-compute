@@ -1,6 +1,7 @@
 class ConfigLoaderError(Exception):
     """Bad config file syntax, unreachable file or bad config schema."""
 
+
 class LibvirtSessionError(Exception):
     """Something went wrong while connecting to libvirtd."""
 

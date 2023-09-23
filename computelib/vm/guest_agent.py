@@ -26,6 +26,9 @@ class GuestAgent(VirtualMachineBase):
     shellexec()
         High-level method for executing shell commands on guest. Command
         must be passed as string. Wraps execute() method.
+
+    TODO:
+        check() method. Ping guest agent and check supported commands.
     """
 
     def __init__(self, domain: libvirt.virDomain, timeout: int | None = None,

@@ -1,4 +1,4 @@
-SRC = na/
+SRC = computelib/
 
 all: build
 

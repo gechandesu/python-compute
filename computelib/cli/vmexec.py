@@ -18,9 +18,9 @@ import sys
 import libvirt
 from docopt import docopt
 
+from ..exceptions import GuestAgentError, VMNotFound
 from ..session import LibvirtSession
 from ..vm import GuestAgent
-from ..exceptions import GuestAgentError, VMNotFound
 
 
 logger = logging.getLogger(__name__)

@@ -1,25 +1,23 @@
 [tool.poetry]
-name = "node-agent"
+name = "computelib"
 version = "0.1.0"
-description = "Node Agent"
+description = "Compute Node Agent library"
 authors = ["ge <ge@nixhacks.net>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-libvirt-python = "9.0.0"  # 9.0.0 on Debian 12
-lxml = "^4.9.2"  # 4.9.2 on Debian 12
-docopt = "^0.6.2"  # 0.6.2 on Debian 12
+libvirt-python = "9.0.0"
+lxml = "^4.9.2"
+docopt = "^0.6.2"
 
 [tool.poetry.scripts]
-na-vmctl = "node_agent.cli.vmctl:cli"
-na-vmexec = "node_agent.cli.vmexec:cli"
+na-vmctl = "computelib.cli.vmctl:cli"
+na-vmexec = "computelib.cli.vmexec:cli"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.yapf]
 
 [tool.pylint."MESSAGES CONTROL"]
 disable = [
@@ -30,4 +28,3 @@ disable = [
     "import-error",
     "too-many-arguments",
 ]
-

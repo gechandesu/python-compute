@@ -1,26 +1,26 @@
 [libvirt]
-uri = 'qemu:///session'
+uri = 'qemu:///system'
 
 [logging]
 level = 'INFO'
 driver = 'file'
-file = '/var/log/node-agent.log'
+file = '/var/log/compute/compute.log'
 
 [[storages.pools]]
 name = 'ssd-nvme'
 enabled = true
 default = true
-path = '/srv/vm-volumes/ssd-nvme'
+path = '/vm-volumes/ssd-nvme'
 
 [[storages.pools]]
 name = 'hdd'
 enabled = true
-path = '/srv/vm-volumes/hdd'
+path = '/vm-volumes/hdd'
 
 [[storages.pools]]
 name = 'images'
 enabled = true
-path = '/srv/vm-images/vendor'
+path = '/vm-images/vendor'
 
 [virtual_machine.defaults]
 autostart = true

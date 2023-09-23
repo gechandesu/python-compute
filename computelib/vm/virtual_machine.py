@@ -156,7 +156,7 @@ class VirtualMachine(VirtualMachineBase):
         if nvcpus == 0:
             raise VMError(f'Cannot set zero vCPUs vm={self.domain_name}')
         if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
-            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE |
                      libvirt.VIR_DOMAIN_AFFECT_CONFIG)
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
@@ -177,31 +177,33 @@ class VirtualMachine(VirtualMachineBase):
         if memory == 0:
             raise VMError(f'Cannot set zero memory vm={self.domain_name}')
         if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
-            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE |
                      libvirt.VIR_DOMAIN_AFFECT_CONFIG)
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
         try:
-            self.domain.setVcpusFlags(memory * 1024, flags=flags)
+            self.domain.setMemoryFlags(memory * 1024,
+                                       libvirt.VIR_DOMAIN_MEM_MAXIMUM)
+            self.domain.setMemoryFlags(memory * 1024, flags=flags)
         except libvirt.libvirtError as err:
             raise VMError(
-                f'Cannot set memory for vm={self.domain_name}: {err}') from err
+                f'Cannot set memory for vm={self.domain_name} {memory=}: {err}') from err
 
-    def attach_device(self, dev_xml: str, hotplug: bool = False):
+    def attach_device(self, device_info: 'DeviceInfo', hotplug: bool = False):
         if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
-            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE |
                      libvirt.VIR_DOMAIN_AFFECT_CONFIG)
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
-        self.domain.attachDeviceFlags(dev_xml, flags=flags)
+        self.domain.attachDeviceFlags(device_info.to_xml(), flags=flags)
 
-    def detach_device(self, dev_xml: str, hotplug: bool = False):
+    def detach_device(self, device_info: 'DeviceInfo', hotplug: bool = False):
         if hotplug and self.domain_info['state'] == libvirt.VIR_DOMAIN_RUNNING:
-            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE +
+            flags = (libvirt.VIR_DOMAIN_AFFECT_LIVE |
                      libvirt.VIR_DOMAIN_AFFECT_CONFIG)
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
-        self.domain.detachDeviceFlags(dev_xml, flags=flags)
+        self.domain.detachDeviceFlags(device_info.to_xml(), flags=flags)
 
     def resize_volume(self, vol_info: VolumeInfo, online: bool = False):
         # Этот метод должен принимать описание волюма и в зависимости от
@@ -218,13 +220,14 @@ class VirtualMachine(VirtualMachineBase):
     def remove_ssh_keys(self, user: str):
         pass
 
-    def set_user_password(self, user: str, password: str):
+    def set_user_password(self, user: str, password: str) -> None:
         self.domain.setUserPassword(user, password)
 
     def dump_xml(self) -> str:
         return self.domain.XMLDesc()
 
-    def delete(self, delete_volumes: bool = False):
+    def delete(self, delete_volumes: bool = False) -> None:
         """Undefine VM."""
         self.shutdown(method='SIGTERM')
         self.domain.undefine()
+        # todo: delete local volumes

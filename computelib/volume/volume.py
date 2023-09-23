@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from time import time
 
 import libvirt
+from lxml import etree
 from lxml.builder import E
-from lxml.etree import tostring
 
 
 @dataclass
@@ -30,7 +30,23 @@ class VolumeInfo:
             E.compat('1.1'),
             E.features(E.lazy_refcounts())
         ))
-        return tostring(xml, encoding='unicode', pretty_print=True)
+        return etree.tostring(xml, encoding='unicode', pretty_print=True)
+
+
+@dataclass
+class DiskInfo:
+    target: str
+    path: str
+    readonly: bool = False
+
+    def to_xml(self) -> str:
+        xml = E.disk(type='file', device='disk')
+        xml.append(E.driver(name='qemu', type='qcow2', cache='writethrough'))
+        xml.append(E.source(file=self.path))
+        xml.append(E.target(dev=self.target, bus='virtio'))
+        if self.readonly:
+            xml.append(E.readonly())
+        return etree.tostring(xml, encoding='unicode', pretty_print=True)
 
 
 class Volume:
