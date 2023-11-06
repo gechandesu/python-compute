@@ -484,10 +484,11 @@ class Instance:
         self, name: str, capacity: int, unit: units.DataUnit
     ) -> None:
         """
-        Resize block device.
+        Resize attached block device.
 
         :param name: Disk device name e.g. `vda`, `sda`, etc.
-        :param capacity: Volume capacity in bytes.
+        :param capacity: New volume capacity.
+        :param unit: Capacity unit.
         """
         self.domain.blockResize(
             name,

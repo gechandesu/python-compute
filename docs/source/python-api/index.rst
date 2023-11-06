@@ -1,15 +1,14 @@
 Python API
 ==========
 
-API позволяет выполнять действия над инстансами программно. Ниже описано пример
-изменения параметров и запуска инстанса `myinstance`.
+The API allows you to perform actions on instances programmatically. Below is
+an example of changing parameters and launching the `myinstance` instance.
 
 .. code-block:: python
 
     import logging
 
     from compute import Session
-
 
     logging.basicConfig(level=logging.DEBUG)
 
@@ -20,28 +19,29 @@ API позволяет выполнять действия над инстанс
         instance.set_autostart(enabled=True)
 
 
-Контекстный менеджер :class:`Session` предоставляет абстракцию над :class:`libvirt.virConnect`
-и возвращает объекты других классов настоящей билиотеки.
+:class:`Session` context manager provides an abstraction over :class:`libvirt.virConnect`
+and returns objects of other classes of the present library.
 
-Представление сущностей
------------------------
+Entity representation
+---------------------
 
-Такие сущности как Сompute-инстанс представлены в виде классов. Эти классы напрямую
-вызывают методы libvirt для выполнения операций на гипервизоре. Пример класса — :data:`Volume`.
+Entities such as a compute-instance are represented as classes. These classes directly
+call libvirt methods to perform operations on the hypervisor. An example class is
+:class:`Volume`.
 
-Конфигурационные файлы различных объектов libvirt в compute описаны специальными
-датаклассами. Датакласс хранит в своих свойствах параметры объекта и может вернуть XML
-конфиг для libvirt с помощью метода ``to_xml()``. Пример — :py:class:`VolumeConfig`.
+The configuration files of various libvirt objects in `compute` are described by special
+dataclasses. The dataclass stores object parameters in its properties and can return an
+XML config for libvirt using the ``to_xml()`` method. For example :class:`VolumeConfig`.
 
-Для валидации входных данных используются модели `Pydantic <https://docs.pydantic.dev/>`_.
-Пример — :py:class:`VolumeSchema`.
+`Pydantic <https://docs.pydantic.dev/>`_ models are used to validate input data.
+For example :class:`VolumeSchema`.
 
-Документация модулей
---------------------
+Modules documentation
+---------------------
 
 .. toctree::
     :maxdepth: 4
 
     session
     instance/index
-    storage
+    storage/index

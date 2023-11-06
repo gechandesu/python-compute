@@ -1,15 +1,15 @@
-Compute Service
-===============
+Compute
+=======
 
-Документация библиотеки для управления Compute-инстансами.
+Compute-instance management library.
 
 .. toctree::
     :maxdepth: 1
 
     python-api/index
 
-Индексы и таблицы
------------------
+Indices and tables
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

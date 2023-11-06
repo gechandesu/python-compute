@@ -15,7 +15,7 @@ extensions = [
 ]
 templates_path = ['_templates']
 exclude_patterns = []
-language = 'ru'
+language = 'en'
 
 # HTML output settings
 html_theme = 'alabaster'

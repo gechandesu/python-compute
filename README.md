@@ -1,49 +1,41 @@
-# Compute Service
+# Compute
 
-В этом репозитории развивается базовая библиотека для взаимодействия с libvirt и выполнения операций с виртуальными машинами. Фокус на QEMU/KVM.
+Compute-instance management library and tools.
 
-## Зависимости (версии из репозитория Debian 12):
+Currently supports only QEMU/KVM based virtual machines.
 
-- `python3-lxml` 4.9.2
-- `python3-docopt` 0.6.2
-- `python3-libvirt` 9.0.0
+## Docs
 
-Минимальная поддерживаемая версия Python — `3.11`, потому, что можем.
+Run `make serve-docs`.
 
-## API
+## Roadmap
 
-В структуре проекта сейчас бардак, многое будет переосмыслено и переделано позже. Основная цель на текущем этапе — получить минимально работающий код, с помощью которого возможно выполнить установку виртуальной машины и как-то управлять ею.
-
-Есть набор классов, предоставляющих собой интерфейсы для взаимодействия с виртуальными машинами, стораджами, дисками и т.п. Датаклассы описывают сущности и имеют метод `to_xml()` для получения XML конфига для `libvirt`. Смысл использования датаклассов в том, чтобы иметь один объект, содержащий в себе нормальные легкочитаемые аттрибуты и XML описание сущности одновременно.
-
-## ROADMAP
-
-- [ ] Установка инстансов
-    - [ ] Установка с использованием эталонного образа ОС
-    - [ ] Установка с пустым диском и загрузкой с ISO
-    - [ ] Установка с использованием готового волюма
-- [x] Базовое управление питанием
-- [ ] Остановка и возобновление инстансов
-- [ ] Изменение числа vCPU на горячую
-- [ ] Изменение топологии процессора
-- [ ] Выбор типа эмуляции процессора, вендора, модели и инструкций
-- [ ] Изменение памяти на горячую
-- [ ] Ресайз дисков на горячую
-- [ ] Выбор между BIOS и UEFI
-- [ ] Редактирование параметров загрузки (boot menu, etc)
-- [x] Горячее подключение устройств
-- [ ] Горячее отключение устройств
-- [ ] GPU
-- [ ] Поддержка инстансов с разной гарантированной долей CPU
-- [x] Базовое управление QEMU Guest Agent
-- [ ] Проверка доступности и возможностей QEMU Guest Agent
-- [ ] Статистика потребления ресурсов
-- [ ] Управление SSH-ключами
-- [ ] Изменение пароля root
+- [x] Create instances
+- [ ] CDROM
+- [x] Instance power management
+- [ ] Instance pause and resume
+- [x] vCPU hotplug
+- [ ] Memory hotplug
+- [x] Hot disk resize [not tested]
+- [ ] CPU topology customization
+- [x] CPU customization (emulation mode, model, vendor, features)
+- [ ] BIOS/UEFI settings
+- [x] Device attaching
+- [ ] Device detaching
+- [ ] GPU passthrough
+- [ ] CPU guarantied resource percent support
+- [x] QEMU Guest Agent management
+- [ ] Instance resources usage stats
+- [ ] SSH-keys management
+- [x] Setting user passwords in guest [not tested]
 - [ ] LXC
-- [ ] Работа с дисками QCOW2,3
-- [ ] ZVOL
-- [ ] Сетевые диски
-- [ ] Создание Storage Pool на основе TOML/YAML описания
-- [ ] Удаление Storage Pool
-- [ ] Снапшоты
+- [x] QCOW2 disks support
+- [ ] ZVOL support
+- [ ] Network disks support
+- [ ] Images service integration (Images service is not implemented yet)
+- [ ] Manage storage pools
+- [ ] Instance snapshots
+- [ ] Instance backups
+- [ ] Instance migrations
+- [ ] HTTP API
+- [ ] Full functional CLI [in progress]
