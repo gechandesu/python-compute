@@ -1,8 +1,7 @@
+dist/
+docs/build/
+.ruff_cache/
 __pycache__/
 *.pyc
 *~
-dom*
-na
-dist/
-P@ssw0rd
 *.todo

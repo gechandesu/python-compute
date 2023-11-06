@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "computelib"
+name = "compute"
 version = "0.1.0"
-description = "Compute Node Agent library"
+description = "Library built on top of libvirt for Compute Service"
 authors = ["ge <ge@nixhacks.net>"]
 readme = "README.md"
 
@@ -9,22 +9,46 @@ readme = "README.md"
 python = "^3.11"
 libvirt-python = "9.0.0"
 lxml = "^4.9.2"
-docopt = "^0.6.2"
+pydantic = "1.10.4"
 
 [tool.poetry.scripts]
-na-vmctl = "computelib.cli.vmctl:cli"
-na-vmexec = "computelib.cli.vmexec:cli"
+compute = "compute.cli.control:cli"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.3"
+isort = "^5.12.0"
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.2.6"
+sphinx-autobuild = "^2021.3.14"
+sphinx-multiversion = "^0.2.4"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.pylint."MESSAGES CONTROL"]
-disable = [
-    "invalid-name",
-    "missing-module-docstring",
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "import-error",
-    "too-many-arguments",
+[tool.ruff]
+line-length = 79
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "Q000", "Q003", "D211", "D212", "ANN101", "ISC001", "COM812",
+    "D203", "ANN204", "T201",
+    "EM102", "TRY003", # maybe not ignore?
+    "TD003", "TD006", "FIX002",  # todo strings linting
 ]
+exclude = ["__init__.py"]
+
+[tool.ruff.lint.flake8-annotations]
+mypy-init-return = true
+allow-star-arg-any = true
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.isort]
+lines-after-imports = 2
