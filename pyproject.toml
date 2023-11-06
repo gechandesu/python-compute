@@ -18,7 +18,6 @@ compute = "compute.cli.control:cli"
 ruff = "^0.1.3"
 isort = "^5.12.0"
 
-
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
 sphinx-autobuild = "^2021.3.14"

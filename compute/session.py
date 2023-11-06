@@ -29,16 +29,25 @@ class Capabilities(NamedTuple):
 
 
 class Session(AbstractContextManager):
-    """Hypervisor session manager."""
+    """
+    Hypervisor session context manager.
+
+    :cvar IMAGES_POOL: images storage pool name taken from env
+    :cvar VOLUMES_POOL: volumes storage pool name taken from env
+    """
+
+    IMAGES_POOL = os.getenv('CMP_IMAGES_POOL')
+    VOLUMES_POOL = os.getenv('CMP_VOLUMES_POOL')
 
     def __init__(self, uri: str | None = None):
         """
         Initialise session with hypervisor.
 
+        :ivar str uri: libvirt connection URI.
+        :ivar libvirt.virConnect connection: libvirt connection object.
+
         :param uri: libvirt connection URI.
         """
-        self.IMAGES_POOL = os.getenv('CMP_IMAGES_POOL')
-        self.VOLUMES_POOL = os.getenv('CMP_VOLUMES_POOL')
         self.uri = uri or 'qemu:///system'
         self.connection = libvirt.open(self.uri)
 
@@ -74,11 +83,16 @@ class Session(AbstractContextManager):
         """
         Create and return new compute instance.
 
-        :param name str: Instance name.
-        :param title str: Instance title for humans.
-        :param description str: Some information about instance
-        :param memory int: Memory in MiB.
-        :param max_memory int: Maximum memory in MiB.
+        :param name: Instance name.
+        :type name: str
+        :param title: Instance title for humans.
+        :type title: str
+        :param description: Some information about instance
+        :type description: str
+        :param memory: Memory in MiB.
+        :type memory: int
+        :param max_memory: Maximum memory in MiB.
+        :type max_memory: int
         """
         # TODO @ge: create instances in transaction
         data = InstanceSchema(**kwargs)

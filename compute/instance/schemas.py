@@ -44,27 +44,27 @@ class CPUSchema(BaseModel):
     features: CPUFeaturesSchema
 
 
-class StorageVolumeType(StrEnum):
+class VolumeType(StrEnum):
     """Storage volume types enumeration."""
 
     FILE = 'file'
     NETWORK = 'network'
 
 
-class StorageVolumeCapacitySchema(BaseModel):
+class VolumeCapacitySchema(BaseModel):
     """Storage volume capacity field model."""
 
     value: int
     unit: DataUnit
 
 
-class StorageVolumeSchema(BaseModel):
+class VolumeSchema(BaseModel):
     """Storage volume model."""
 
-    type: StorageVolumeType  # noqa: A003
+    type: VolumeType  # noqa: A003
     source: Path
     target: str
-    capacity: StorageVolumeCapacitySchema
+    capacity: VolumeCapacitySchema
     readonly: bool = False
     is_system: bool = False
 
@@ -98,7 +98,7 @@ class InstanceSchema(BaseModel):
     arch: str
     image: str
     boot: BootOptionsSchema
-    volumes: list[StorageVolumeSchema]
+    volumes: list[VolumeSchema]
     network_interfaces: list[NetworkInterfaceSchema]
 
     @validator('name')

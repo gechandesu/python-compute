@@ -20,7 +20,10 @@ lint:
 docs:
 	poetry run sphinx-build $(DOCS_SRC) $(DOCS_BUILD)
 
-serve-docs:
+docs-versions:
+	poetry run sphinx-multiversion $(DOCS_SRC) $(DOCS_BUILD)
+
+serve-docs: docs-versions
 	poetry run sphinx-autobuild $(DOCS_SRC) $(DOCS_BUILD)
 
 clean:

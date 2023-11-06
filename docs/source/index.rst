@@ -4,8 +4,9 @@ Compute Service
 Документация библиотеки для управления Compute-инстансами.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 1
+
+    python-api/index
 
 Индексы и таблицы
 -----------------

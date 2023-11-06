@@ -24,7 +24,7 @@ class InvalidDataUnitError(ValueError):
 
 
 def to_bytes(value: int, unit: DataUnit = DataUnit.BYTES) -> int:
-    """Convert value to bytes. See `DataUnit`."""
+    """Convert value to bytes. See :class:`DataUnit`."""
     try:
         _ = DataUnit(unit)
     except ValueError as e:

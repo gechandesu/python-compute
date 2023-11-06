@@ -1,35 +1,32 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../compute'))
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
+# Project information
 project = 'Compute'
 copyright = '2023, Compute Authors'
 author = 'Compute Authors'
 release = '0.1.0'
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-extensions = []
-
+# Sphinx general settings
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx_multiversion',
+]
 templates_path = ['_templates']
 exclude_patterns = []
-
 language = 'ru'
 
-extensions = [
-    "sphinx_multiversion",
-]
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
+# HTML output settings
 html_theme = 'alabaster'
 html_static_path = ['_static']
-html_sidebars = [
-    "versioning.html",
-]
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+        'donate.html',
+        'versioning.html',
+    ]
+}

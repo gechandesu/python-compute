@@ -162,16 +162,16 @@ class DeviceConfig:
 
 
 class Instance:
-    """Class for manipulating compute instance."""
+    """Manage compute instances."""
 
     def __init__(self, domain: libvirt.virDomain):
         """
         Initialise Instance.
 
-        :prop domain libvirt.virDomain:
-        :prop connection libvirt.virConnect:
-        :prop name str:
-        :prop guest_agent GuestAgent:
+        :ivar libvirt.virDomain domain: domain object
+        :ivar libvirt.virConnect connection: connection object
+        :ivar str name: domain name
+        :ivar GuestAgent guest_agent: :class:`GuestAgent` object
 
         :param domain: libvirt domain object
         """
