@@ -409,7 +409,7 @@ class Instance:
             raise InstanceError(
                 f'Cannot set zero vCPUs for instance={self.name}'
             )
-        if nvcpus == self.info.nproc:
+        if nvcpus == self.get_info().nproc:
             log.warning(
                 'Instance instance=%s already have %s vCPUs, nothing to do',
                 self.name,

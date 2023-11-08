@@ -2,8 +2,6 @@
 
 Compute-instance management library and tools.
 
-Currently supports only QEMU/KVM based virtual machines.
-
 ## Docs
 
 Run `make serve-docs`. See [Development](#development) below.

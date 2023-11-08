@@ -89,16 +89,16 @@ def _exec_guest_agent_command(
     instance = session.get_instance(args.instance)
     ga = GuestAgent(instance.domain, timeout=args.timeout)
     arguments = args.arguments.copy()
-    if len(arguments) > 1:
+    if len(arguments) > 1 and not args.no_join_args:
         arguments = [shlex.join(arguments)]
-    if not args.no_cmd_string:
+    if not args.no_join_args:
         arguments.insert(0, '-c')
     stdin = None
     if not sys.stdin.isatty():
         stdin = sys.stdin.read()
     try:
         output = ga.guest_exec(
-            path=args.shell,
+            path=args.executable,
             args=arguments,
             env=args.env,
             stdin=stdin,
@@ -296,8 +296,8 @@ def cli() -> None:  # noqa: PLR0915
         ),
     )
     execute.add_argument(
-        '-s',
-        '--shell',
+        '-x',
+        '--executable',
         default='/bin/sh',
         help='path to executable in guest, /bin/sh by default',
     )
@@ -311,11 +311,11 @@ def cli() -> None:  # noqa: PLR0915
     )
     execute.add_argument(
         '-n',
-        '--no-cmd-string',
+        '--no-join-args',
         action='store_true',
         default=False,
         help=(
-            "do not append '-c' option to arguments list, suitable "
+            "do not join arguments list and add '-c' option, suitable "
             'for non-shell executables and other specific cases.'
         ),
     )
