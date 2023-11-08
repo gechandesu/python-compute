@@ -11,7 +11,7 @@ build: format lint
 	poetry build
 
 format:
-	poetry run isort --lai 2 $(SRC)
+	poetry run isort $(SRC)
 	poetry run ruff format $(SRC)
 
 lint:
@@ -23,7 +23,7 @@ docs:
 docs-versions:
 	poetry run sphinx-multiversion $(DOCS_SRC) $(DOCS_BUILD)
 
-serve-docs: docs-versions
+serve-docs:
 	poetry run sphinx-autobuild $(DOCS_SRC) $(DOCS_BUILD)
 
 clean:

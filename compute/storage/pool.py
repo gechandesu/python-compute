@@ -15,8 +15,8 @@ from .volume import Volume, VolumeConfig
 log = logging.getLogger(__name__)
 
 
-class StoragePoolUsage(NamedTuple):
-    """Storage pool usage info schema."""
+class StoragePoolUsageInfo(NamedTuple):
+    """Storage pool usage info."""
 
     capacity: int
     allocation: int
@@ -30,17 +30,17 @@ class StoragePool:
         """Initislise StoragePool."""
         self.pool = pool
         self.name = pool.name()
+        self.path = self._get_path()
 
-    @property
-    def path(self) -> Path:
+    def _get_path(self) -> Path:
         """Return storage pool path."""
         xml = etree.fromstring(self.pool.XMLDesc())  # noqa: S320
         return Path(xml.xpath('/pool/target/path/text()')[0])
 
-    def usage(self) -> StoragePoolUsage:
+    def get_usage_info(self) -> StoragePoolUsageInfo:
         """Return info about storage pool usage."""
         xml = etree.fromstring(self.pool.XMLDesc())  # noqa: S320
-        return StoragePoolUsage(
+        return StoragePoolUsageInfo(
             capacity=int(xml.xpath('/pool/capacity/text()')[0]),
             allocation=int(xml.xpath('/pool/allocation/text()')[0]),
             available=int(xml.xpath('/pool/available/text()')[0]),
@@ -58,7 +58,7 @@ class StoragePool:
     def create_volume(self, vol_conf: VolumeConfig) -> Volume:
         """Create storage volume and return Volume instance."""
         log.info(
-            'Create storage volume vol=%s in pool=%s', vol_conf.name, self.pool
+            'Create storage volume vol=%s in pool=%s', vol_conf.name, self.name
         )
         vol = self.pool.createXML(
             vol_conf.to_xml(),

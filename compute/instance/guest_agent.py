@@ -1,4 +1,4 @@
-"""Manage QEMU guest agent."""
+"""Interacting with the QEMU Guest Agent."""
 
 import json
 import logging
@@ -19,9 +19,6 @@ from compute.exceptions import (
 
 log = logging.getLogger(__name__)
 
-QEMU_TIMEOUT = 60
-POLL_INTERVAL = 0.3
-
 
 class GuestExecOutput(NamedTuple):
     """QEMU guest-exec command output."""
@@ -35,7 +32,7 @@ class GuestExecOutput(NamedTuple):
 class GuestAgent:
     """Class for interacting with QEMU guest agent."""
 
-    def __init__(self, domain: libvirt.virDomain, timeout: int | None = None):
+    def __init__(self, domain: libvirt.virDomain, timeout: int = 60):
         """
         Initialise GuestAgent.
 
@@ -43,7 +40,7 @@ class GuestAgent:
         :param timeout: QEMU timeout
         """
         self.domain = domain
-        self.timeout = timeout or QEMU_TIMEOUT
+        self.timeout = timeout
         self.flags = libvirt_qemu.VIR_DOMAIN_QEMU_MONITOR_COMMAND_DEFAULT
         self.last_pid = None
 
@@ -65,9 +62,6 @@ class GuestAgent:
             return json.loads(output)
         except libvirt.libvirtError as e:
             if e.get_error_code() == libvirt.VIR_ERR_AGENT_UNRESPONSIVE:
-                log.exception(
-                    'Guest agent is unavailable on instanse=%s', self.name
-                )
                 raise GuestAgentUnavailableError(e) from e
             raise GuestAgentError(e) from e
 
@@ -95,9 +89,7 @@ class GuestAgent:
 
     def raise_for_commands(self, commands: list[str]) -> None:
         """
-        Check QEMU guest agent command availability.
-
-        Raise exception if command is not available.
+        Raise exception if QEMU GA command is not available.
 
         :param commands: List of required commands
         :raise: GuestAgentCommandNotSupportedError
@@ -164,12 +156,15 @@ class GuestAgent:
             stderr = b64decode(stderr or '').decode('utf-8')
         return GuestExecOutput(exited, exitcode, stdout, stderr)
 
-    def guest_exec_status(self, pid: int, *, poll: bool = False) -> dict:
+    def guest_exec_status(
+        self, pid: int, *, poll: bool = False, poll_interval: float = 0.3
+    ) -> dict:
         """
         Execute guest-exec-status and return output.
 
-        :param pid: PID in guest
-        :param poll: If True poll command status with POLL_INTERVAL
+        :param pid: PID in guest.
+        :param poll: If True poll command status.
+        :param poll_interval: Time between attempts to obtain command status.
         :return: Command output
         :rtype: dict
         """
@@ -185,7 +180,7 @@ class GuestAgent:
             command_status = self.execute(command)
             if command_status['return']['exited']:
                 break
-            sleep(POLL_INTERVAL)
+            sleep(poll_interval)
             now = time()
             if now - start_time > self.timeout:
                 raise GuestAgentTimeoutExceededError(self.timeout)

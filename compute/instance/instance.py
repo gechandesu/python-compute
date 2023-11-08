@@ -1,9 +1,9 @@
 """Manage compute instances."""
 
-__all__ = ['Instance', 'InstanceConfig']
+__all__ = ['Instance', 'InstanceConfig', 'InstanceInfo']
 
 import logging
-from dataclasses import dataclass
+from typing import NamedTuple
 
 import libvirt
 from lxml import etree
@@ -16,14 +16,19 @@ from compute.exceptions import (
 from compute.utils import units
 
 from .guest_agent import GuestAgent
-from .schemas import CPUSchema, InstanceSchema, NetworkInterfaceSchema
+from .schemas import (
+    CPUEmulationMode,
+    CPUSchema,
+    InstanceSchema,
+    NetworkInterfaceSchema,
+)
 
 
 log = logging.getLogger(__name__)
 
 
 class InstanceConfig:
-    """Compute instance description for libvirt."""
+    """Compute instance config builder."""
 
     def __init__(self, schema: InstanceSchema):
         """
@@ -46,21 +51,33 @@ class InstanceConfig:
         self.network_interfaces = schema.network_interfaces
 
     def _gen_cpu_xml(self, cpu: CPUSchema) -> etree.Element:
-        xml = E.cpu(match='exact', mode=cpu.emulation_mode)
-        xml.append(E.model(cpu.model, fallback='forbid'))
-        xml.append(E.vendor(cpu.vendor))
-        xml.append(
-            E.topology(
-                sockets=str(cpu.topology.sockets),
-                dies=str(cpu.topology.dies),
-                cores=str(cpu.topology.cores),
-                threads=str(cpu.topology.threads),
+        options = {
+            'mode': cpu.emulation_mode,
+            'match': 'exact',
+            'check': 'partial',
+        }
+        if cpu.emulation_mode == CPUEmulationMode.HOST_PASSTHROUGH:
+            options['check'] = 'none'
+            options['migratable'] = 'on'
+        xml = E.cpu(**options)
+        if cpu.model:
+            xml.append(E.model(cpu.model, fallback='forbid'))
+        if cpu.vendor:
+            xml.append(E.vendor(cpu.vendor))
+        if cpu.topology:
+            xml.append(
+                E.topology(
+                    sockets=str(cpu.topology.sockets),
+                    dies=str(cpu.topology.dies),
+                    cores=str(cpu.topology.cores),
+                    threads=str(cpu.topology.threads),
+                )
             )
-        )
-        for feature in cpu.features.require:
-            xml.append(E.feature(policy='require', name=feature))
-        for feature in cpu.features.disable:
-            xml.append(E.feature(policy='disable', name=feature))
+        if cpu.features:
+            for feature in cpu.features.require:
+                xml.append(E.feature(policy='require', name=feature))
+            for feature in cpu.features.disable:
+                xml.append(E.feature(policy='disable', name=feature))
         return xml
 
     def _gen_vcpus_xml(self, vcpus: int, max_vcpus: int) -> etree.Element:
@@ -89,15 +106,15 @@ class InstanceConfig:
 
     def to_xml(self) -> str:
         """Return XML config for libvirt."""
-        xml = E.domain(
-            E.name(self.name),
-            E.title(self.title),
-            E.description(self.description),
-            E.metadata(),
-            E.memory(str(self.memory * 1024), unit='KiB'),
-            E.currentMemory(str(self.memory * 1024), unit='KiB'),
-            type='kvm',
-        )
+        xml = E.domain(type='kvm')
+        xml.append(E.name(self.name))
+        if self.title:
+            xml.append(E.title(self.title))
+        if self.description:
+            xml.append(E.description(self.description))
+        xml.append(E.metadata())
+        xml.append(E.memory(str(self.max_memory * 1024), unit='KiB'))
+        xml.append(E.currentMemory(str(self.memory * 1024), unit='KiB'))
         xml.append(
             E.vcpu(
                 str(self.max_vcpus),
@@ -148,8 +165,14 @@ class InstanceConfig:
         return etree.tostring(xml, encoding='unicode', pretty_print=True)
 
 
-@dataclass
-class InstanceInfo:
+class InstanceInfo(NamedTuple):
+    """
+    Store compute instance info.
+
+    Reference:
+    https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInfo
+    """
+
     state: str
     max_memory: int
     memory: int
@@ -193,13 +216,8 @@ class Instance:
         }
         return states[state]
 
-    @property
-    def info(self) -> InstanceInfo:
-        """
-        Return instance info.
-
-        https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInfo
-        """
+    def get_info(self) -> InstanceInfo:
+        """Return instance info."""
         _info = self.domain.info()
         return InstanceInfo(
             state=self._expand_instance_state(_info[0]),
@@ -209,8 +227,7 @@ class Instance:
             cputime=_info[4],
         )
 
-    @property
-    def status(self) -> str:
+    def get_status(self) -> str:
         """
         Return instance state: 'running', 'shutoff', etc.
 
@@ -225,7 +242,6 @@ class Instance:
             ) from e
         return self._expand_instance_state(state)
 
-    @property
     def is_running(self) -> bool:
         """Return True if instance is running, else return False."""
         if self.domain.isActive() != 1:
@@ -233,7 +249,6 @@ class Instance:
             return False
         return True
 
-    @property
     def is_autostart(self) -> bool:
         """Return True if instance autostart is enabled, else return False."""
         try:
@@ -244,10 +259,18 @@ class Instance:
                 f'instance={self.name}: {e}'
             ) from e
 
+    def get_max_memory(self) -> int:
+        """Maximum memory value for domain in KiB."""
+        return self.domain.maxMemory()
+
+    def get_max_vcpus(self) -> int:
+        """Maximum vCPUs number for domain."""
+        return self.domain.maxVcpus()
+
     def start(self) -> None:
         """Start defined instance."""
         log.info('Starting instnce=%s', self.name)
-        if self.is_running:
+        if self.is_running():
             log.warning(
                 'Already started, nothing to do instance=%s', self.name
             )
@@ -311,6 +334,15 @@ class Instance:
                 f'Cannot shutdown instance={self.name} ' f'{method=}: {e}'
             ) from e
 
+    def reboot(self) -> None:
+        """Send ACPI signal to guest OS to reboot. OS may ignore this."""
+        try:
+            self.domain.reboot()
+        except libvirt.libvirtError as e:
+            raise InstanceError(
+                f'Cannot reboot instance={self.name}: {e}'
+            ) from e
+
     def reset(self) -> None:
         """
         Reset instance.
@@ -331,14 +363,19 @@ class Instance:
                 f'Cannot reset instance={self.name}: {e}'
             ) from e
 
-    def reboot(self) -> None:
-        """Send ACPI signal to guest OS to reboot. OS may ignore this."""
-        try:
-            self.domain.reboot()
-        except libvirt.libvirtError as e:
-            raise InstanceError(
-                f'Cannot reboot instance={self.name}: {e}'
-            ) from e
+    def power_reset(self) -> None:
+        """
+        Shutdown instance and start.
+
+        By analogy with real hardware, this is a normal server shutdown,
+        and then turning off from the power supply and turning it on again.
+
+        This method is applicable in cases where there has been a
+        configuration change in libvirt and you need to restart the
+        instance to apply the new configuration.
+        """
+        self.shutdown(method='NORMAL')
+        self.start()
 
     def set_autostart(self, *, enabled: bool) -> None:
         """
@@ -383,7 +420,7 @@ class Instance:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
             self.domain.setVcpusFlags(nvcpus, flags=flags)
             if live is True:
-                if not self.is_running:
+                if not self.is_running():
                     log.warning(
                         'Instance is not running, changes applied in '
                         'instance config.'
@@ -453,7 +490,7 @@ class Instance:
         :param device: Object with device description e.g. DiskConfig
         :param live: Affect a running instance
         """
-        if live and self.is_running:
+        if live and self.is_running():
             flags = (
                 libvirt.VIR_DOMAIN_AFFECT_LIVE
                 | libvirt.VIR_DOMAIN_AFFECT_CONFIG
@@ -471,7 +508,7 @@ class Instance:
         :param device: Object with device description e.g. DiskConfig
         :param live: Affect a running instance
         """
-        if live and self.is_running:
+        if live and self.is_running():
             flags = (
                 libvirt.VIR_DOMAIN_AFFECT_LIVE
                 | libvirt.VIR_DOMAIN_AFFECT_CONFIG

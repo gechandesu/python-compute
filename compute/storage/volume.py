@@ -87,11 +87,7 @@ class Volume:
         self.pool_name = pool.name()
         self.vol = vol
         self.name = vol.name()
-
-    @property
-    def path(self) -> Path:
-        """Return path to volume."""
-        return Path(self.vol.path())
+        self.path = Path(vol.path())
 
     def dump_xml(self) -> str:
         """Return volume XML description as string."""

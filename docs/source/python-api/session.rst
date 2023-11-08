@@ -1,9 +1,6 @@
 ``session``
 ===========
 
-.. autoclass:: compute.Session
+.. automodule:: compute.session
    :members:
-   :special-members:
-
-.. autoclass:: compute.session.Capabilities
-   :members:
+   :special-members: __init__

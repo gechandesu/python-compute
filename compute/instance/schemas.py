@@ -4,9 +4,18 @@ import re
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Extra, validator
 
 from compute.utils.units import DataUnit
+
+
+class EntityModel(BaseModel):
+    """Basic entity model."""
+
+    class Config:
+        """Do not allow extra fields."""
+
+        extra = Extra.forbid
 
 
 class CPUEmulationMode(StrEnum):
@@ -18,7 +27,7 @@ class CPUEmulationMode(StrEnum):
     MAXIMUM = 'maximum'
 
 
-class CPUTopologySchema(BaseModel):
+class CPUTopologySchema(EntityModel):
     """CPU topology model."""
 
     sockets: int
@@ -27,67 +36,66 @@ class CPUTopologySchema(BaseModel):
     dies: int = 1
 
 
-class CPUFeaturesSchema(BaseModel):
+class CPUFeaturesSchema(EntityModel):
     """CPU features model."""
 
     require: list[str]
     disable: list[str]
 
 
-class CPUSchema(BaseModel):
+class CPUSchema(EntityModel):
     """CPU model."""
 
     emulation_mode: CPUEmulationMode
-    model: str
-    vendor: str
-    topology: CPUTopologySchema
-    features: CPUFeaturesSchema
+    model: str | None
+    vendor: str | None
+    topology: CPUTopologySchema | None
+    features: CPUFeaturesSchema | None
 
 
 class VolumeType(StrEnum):
     """Storage volume types enumeration."""
 
     FILE = 'file'
-    NETWORK = 'network'
 
 
-class VolumeCapacitySchema(BaseModel):
+class VolumeCapacitySchema(EntityModel):
     """Storage volume capacity field model."""
 
     value: int
     unit: DataUnit
 
 
-class VolumeSchema(BaseModel):
+class VolumeSchema(EntityModel):
     """Storage volume model."""
 
     type: VolumeType  # noqa: A003
-    source: Path
     target: str
     capacity: VolumeCapacitySchema
-    readonly: bool = False
+    source: str | None = None
+    is_readonly: bool = False
     is_system: bool = False
 
 
-class NetworkInterfaceSchema(BaseModel):
+class NetworkInterfaceSchema(EntityModel):
     """Network inerface model."""
 
     source: str
     mac: str
 
 
-class BootOptionsSchema(BaseModel):
+class BootOptionsSchema(EntityModel):
     """Instance boot settings."""
 
     order: tuple
 
 
-class InstanceSchema(BaseModel):
+class InstanceSchema(EntityModel):
     """Compute instance model."""
 
     name: str
-    title: str
-    description: str
+    title: str | None
+    description: str | None
     memory: int
     max_memory: int
     vcpus: int
@@ -96,10 +104,10 @@ class InstanceSchema(BaseModel):
     machine: str
     emulator: Path
     arch: str
-    image: str
     boot: BootOptionsSchema
     volumes: list[VolumeSchema]
     network_interfaces: list[NetworkInterfaceSchema]
+    image: str | None = None
 
     @validator('name')
     def _check_name(cls, value: str) -> str:  # noqa: N805
@@ -111,12 +119,28 @@ class InstanceSchema(BaseModel):
             raise ValueError(msg)
         return value
 
-    @validator('volumes')
-    def _check_volumes(cls, value: list) -> list:  # noqa: N805
-        if len([v for v in value if v.is_system is True]) != 1:
-            msg = 'Volumes list must contain one system volume'
+    @validator('cpu')
+    def _check_topology(cls, cpu: int, values: dict) -> CPUSchema:  # noqa: N805
+        topo = cpu.topology
+        max_vcpus = values['max_vcpus']
+        if topo and topo.sockets * topo.cores * topo.threads != max_vcpus:
+            msg = f'CPU topology does not match with {max_vcpus=}'
             raise ValueError(msg)
-        return value
+        return cpu
+
+    @validator('volumes')
+    def _check_volumes(cls, volumes: list) -> list:  # noqa: N805
+        if len([v for v in volumes if v.is_system is True]) != 1:
+            msg = 'volumes list must contain one system volume'
+            raise ValueError(msg)
+        vol_with_source = 0
+        for vol in volumes:
+            if vol.is_system is True and vol.is_readonly is True:
+                msg = 'volume marked as system cannot be readonly'
+                raise ValueError(msg)
+            if vol.source is not None:
+                vol_with_source += 1
+        return volumes
 
     @validator('network_interfaces')
     def _check_network_interfaces(cls, value: list) -> list:  # noqa: N805

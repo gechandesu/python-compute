@@ -26,6 +26,25 @@ class Capabilities(NamedTuple):
     virt: str
     emulator: str
     machine: str
+    max_vcpus: int
+
+
+class NodeInfo(NamedTuple):
+    """
+    Store compute node info.
+
+    See https://libvirt.org/html/libvirt-libvirt-host.html#virNodeInfo
+    NOTE: memory unit in libvirt docs is wrong! Actual unit is MiB.
+    """
+
+    arch: str
+    memory: int
+    cpus: int
+    mhz: int
+    nodes: int
+    sockets: int
+    cores: int
+    threads: int
 
 
 class Session(AbstractContextManager):
@@ -68,7 +87,21 @@ class Session(AbstractContextManager):
         """Close connection to libvirt daemon."""
         self.connection.close()
 
-    def capabilities(self) -> Capabilities:
+    def get_node_info(self) -> NodeInfo:
+        """Return information about compute node."""
+        info = self.connection.getInfo()
+        return NodeInfo(
+            arch=info[0],
+            memory=info[1],
+            cpus=info[2],
+            mhz=info[3],
+            nodes=info[4],
+            sockets=info[5],
+            cores=info[6],
+            threads=info[7],
+        )
+
+    def get_capabilities(self) -> Capabilities:
         """Return capabilities e.g. arch, virt, emulator, etc."""
         prefix = '/domainCapabilities'
         caps = etree.fromstring(self.connection.getDomainCapabilities())  # noqa: S320
@@ -77,6 +110,7 @@ class Session(AbstractContextManager):
             virt=caps.xpath(f'{prefix}/domain/text()')[0],
             emulator=caps.xpath(f'{prefix}/path/text()')[0],
             machine=caps.xpath(f'{prefix}/machine/text()')[0],
+            max_vcpus=int(caps.xpath(f'{prefix}/vcpu/@max')[0]),
         )
 
     def create_instance(self, **kwargs: Any) -> Instance:
@@ -87,14 +121,35 @@ class Session(AbstractContextManager):
         :type name: str
         :param title: Instance title for humans.
         :type title: str
-        :param description: Some information about instance
+        :param description: Some information about instance.
         :type description: str
         :param memory: Memory in MiB.
         :type memory: int
         :param max_memory: Maximum memory in MiB.
         :type max_memory: int
+        :param vcpus: Number of vCPUs.
+        :type vcpus: int
+        :param max_vcpus: Maximum vCPUs.
+        :type max_vcpus: int
+        :param cpu: CPU configuration. See :class:`CPUSchema` for info.
+        :type cpu: dict
+        :param machine: QEMU emulated machine.
+        :type machine: str
+        :param emulator: Path to emulator.
+        :type emulator: str
+        :param arch: CPU architecture to virtualization.
+        :type arch: str
+        :param boot: Boot settings. See :class:`BootOptionsSchema`.
+        :type boot: dict
+        :param image: Source disk image name for system disk.
+        :type image: str
+        :param volumes: List of storage volume configs. For more info
+            see :class:`VolumeSchema`.
+        :type volumes: list[dict]
+        :param network_interfaces: List of virtual network interfaces
+            configs. See :class:`NetworkInterfaceSchema` for more info.
+        :type network_interfaces: list[dict]
         """
-        # TODO @ge: create instances in transaction
         data = InstanceSchema(**kwargs)
         config = InstanceConfig(data)
         log.info('Define XML...')
@@ -113,19 +168,17 @@ class Session(AbstractContextManager):
             log.info('Connecting to volumes pool...')
             volumes_pool = self.get_storage_pool(self.VOLUMES_POOL)
             log.info('Building volume configuration...')
-            # if not volume.source:
-            # В случае если пользователь передаёт source для волюма, следует
-            # в либвирте делать поиск волюма по пути, а не по имени
-            #    gen_vol_name
-            # TODO @ge: come up with something else
-            vol_name = f'{config.name}-{volume.target}-{uuid4()}.qcow2'
+            if not volume.source:
+                vol_name = f'{config.name}-{volume.target}-{uuid4()}.qcow2'
+            else:
+                vol_name = volume.source
             vol_conf = VolumeConfig(
                 name=vol_name,
                 path=str(volumes_pool.path.joinpath(vol_name)),
                 capacity=capacity,
             )
             log.info('Volume configuration is:\n %s', vol_conf.to_xml())
-            if volume.is_system is True:
+            if volume.is_system is True and data.image:
                 log.info(
                     "Volume is marked as 'system', start cloning image..."
                 )

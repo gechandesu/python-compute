@@ -45,3 +45,5 @@ Modules documentation
     session
     instance/index
     storage/index
+    utils
+    exceptions

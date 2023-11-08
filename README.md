@@ -6,7 +6,7 @@ Currently supports only QEMU/KVM based virtual machines.
 
 ## Docs
 
-Run `make serve-docs`.
+Run `make serve-docs`. See [Development](#development) below.
 
 ## Roadmap
 
@@ -39,3 +39,11 @@ Run `make serve-docs`.
 - [ ] Instance migrations
 - [ ] HTTP API
 - [ ] Full functional CLI [in progress]
+
+## Development
+
+Install [poetry](https://python-poetry.org/), clone this repository and run:
+
+```
+poetry install --with dev --with docs
+```

@@ -1,12 +1,18 @@
 """Command line interface."""
 
 import argparse
+import io
 import logging
 import os
 import shlex
 import sys
+from collections import UserDict
+from typing import Any
+from uuid import uuid4
 
 import libvirt
+import yaml
+from pydantic import ValidationError
 
 from compute import __version__
 from compute.exceptions import (
@@ -15,8 +21,7 @@ from compute.exceptions import (
 )
 from compute.instance import GuestAgent
 from compute.session import Session
-
-from ._create import _create_instance
+from compute.utils import ids
 
 
 log = logging.getLogger(__name__)
@@ -37,41 +42,41 @@ class Table:
         """Initialise Table."""
         self.whitespace = whitespace or '\t'
         self.header = []
-        self._rows = []
-        self._table = ''
+        self.rows = []
+        self.table = ''
 
-    def row(self, row: list) -> None:
+    def add_row(self, row: list) -> None:
         """Add table row."""
-        self._rows.append([str(col) for col in row])
+        self.rows.append([str(col) for col in row])
 
-    def rows(self, rows: list[list]) -> None:
+    def add_rows(self, rows: list[list]) -> None:
         """Add multiple rows."""
         for row in rows:
-            self.row(row)
+            self.add_row(row)
 
     def __str__(self) -> str:
         """Build table and return."""
-        widths = [max(map(len, col)) for col in zip(*self._rows, strict=True)]
-        self._rows.insert(0, [str(h).upper() for h in self.header])
-        for row in self._rows:
-            self._table += self.whitespace.join(
+        widths = [max(map(len, col)) for col in zip(*self.rows, strict=True)]
+        self.rows.insert(0, [str(h).upper() for h in self.header])
+        for row in self.rows:
+            self.table += self.whitespace.join(
                 (
                     val.ljust(width)
                     for val, width in zip(row, widths, strict=True)
                 )
             )
-            self._table += '\n'
-        return self._table.strip()
+            self.table += '\n'
+        return self.table.strip()
 
 
 def _list_instances(session: Session) -> None:
     table = Table()
     table.header = ['NAME', 'STATE']
     for instance in session.list_instances():
-        table.row(
+        table.add_row(
             [
                 instance.name,
-                instance.status,
+                instance.get_status(),
             ]
         )
     print(table)
@@ -113,11 +118,93 @@ def _exec_guest_agent_command(
     sys.exit(output.exitcode)
 
 
+class _NotPresent:
+    """
+    Type for representing non-existent dictionary keys.
+
+    See :class:`_FillableDict`.
+    """
+
+
+class _FillableDict(UserDict):
+    """Use :method:`fill` to add key if not present."""
+
+    def __init__(self, data: dict):
+        self.data = data
+
+    def fill(self, key: str, value: Any) -> None:  # noqa: ANN401
+        if self.data.get(key, _NotPresent) is _NotPresent:
+            self.data[key] = value
+
+
+def _merge_dicts(a: dict, b: dict, path: list[str] | None = None) -> dict:
+    """Merge `b` into `a`. Return modified `a`."""
+    if path is None:
+        path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                _merge_dicts(a[key], b[key], [path + str(key)])
+            elif a[key] == b[key]:
+                pass  # same leaf value
+            else:
+                a[key] = b[key]  # replace existing key's values
+        else:
+            a[key] = b[key]
+    return a
+
+
+def _create_instance(session: Session, file: io.TextIOWrapper) -> None:
+    try:
+        data = _FillableDict(yaml.load(file.read(), Loader=yaml.SafeLoader))
+        log.debug('Read from file: %s', data)
+    except yaml.YAMLError as e:
+        sys.exit(f'error: cannot parse YAML: {e}')
+
+    capabilities = session.get_capabilities()
+    node_info = session.get_node_info()
+
+    data.fill('name', uuid4().hex)
+    data.fill('title', None)
+    data.fill('description', None)
+    data.fill('arch', capabilities.arch)
+    data.fill('machine', capabilities.machine)
+    data.fill('emulator', capabilities.emulator)
+    data.fill('max_vcpus', node_info.cpus)
+    data.fill('max_memory', node_info.memory)
+    data.fill('cpu', {})
+    cpu = {
+        'emulation_mode': 'host-passthrough',
+        'model': None,
+        'vendor': None,
+        'topology': None,
+        'features': None,
+    }
+    data['cpu'] = _merge_dicts(data['cpu'], cpu)
+    data.fill(
+        'network_interfaces',
+        [{'source': 'default', 'mac': ids.random_mac()}],
+    )
+    data.fill('boot', {'order': ['cdrom', 'hd']})
+
+    try:
+        log.debug('Input data: %s', data)
+        session.create_instance(**data)
+    except ValidationError as e:
+        for error in e.errors():
+            fields = '.'.join([str(lc) for lc in error['loc']])
+            print(
+                f"validation error: {fields}: {error['msg']}",
+                file=sys.stderr,
+            )
+        sys.exit()
+
+
 def main(session: Session, args: argparse.Namespace) -> None:
     """Perform actions."""
     match args.command:
         case 'create':
-            _create_instance(session, args)
+            _create_instance(session, args.file)
         case 'exec':
             _exec_guest_agent_command(session, args)
         case 'ls':
@@ -179,30 +266,13 @@ def cli() -> None:  # noqa: PLR0915
     subparsers = root.add_subparsers(dest='command', metavar='COMMAND')
 
     # create command
-    create = subparsers.add_parser('create', help='create compute instance')
-    create.add_argument('image', nargs='?')
-    create.add_argument('--name', help='instance name, used as ID')
-    create.add_argument('--title', help='human-understandable instance title')
-    create.add_argument('--desc', default='', help='instance description')
-    create.add_argument('--memory', type=int, help='memory in MiB')
-    create.add_argument('--max-memory', type=int, help='max memory in MiB')
-    create.add_argument('--vcpus', type=int)
-    create.add_argument('--max-vcpus', type=int)
-    create.add_argument('--cpu-vendor')
-    create.add_argument('--cpu-model')
-    create.add_argument(
-        '--cpu-emulation-mode',
-        choices=['host-passthrough', 'host-model', 'custom'],
-        default='host-passthrough',
+    create = subparsers.add_parser(
+        'create', help='create new instance from YAML config file'
     )
-    create.add_argument('--cpu-features')
-    create.add_argument('--cpu-topology')
-    create.add_argument('--mahine')
-    create.add_argument('--emulator')
-    create.add_argument('--arch')
-    create.add_argument('--boot-order')
-    create.add_argument('--volume')
-    create.add_argument('-f', '--file', help='create instance from YAML')
+    create.add_argument(
+        'file',
+        type=argparse.FileType('r', encoding='UTF-8'),
+    )
 
     # exec subcommand
     execute = subparsers.add_parser(
@@ -303,14 +373,17 @@ def cli() -> None:  # noqa: PLR0915
     if log_level in log_levels:
         logging.basicConfig(level=log_levels[log_level])
 
+    log.debug('CLI started with args: %s', args)
     # Perform actions
     try:
         with Session(args.connect) as session:
             main(session, args)
     except ComputeServiceError as e:
         sys.exit(f'error: {e}')
-    except (KeyboardInterrupt, SystemExit):
+    except KeyboardInterrupt:
         sys.exit()
+    except SystemExit as e:
+        sys.exit(e)
     except Exception as e:  # noqa: BLE001
         sys.exit(f'unexpected error {type(e)}: {e}')
 

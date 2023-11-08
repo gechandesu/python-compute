@@ -1,4 +1,4 @@
-"""Compute Service exceptions."""
+"""Exceptions."""
 
 
 class ComputeServiceError(Exception):
