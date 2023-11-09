@@ -25,9 +25,7 @@ from compute.utils import ids
 
 
 log = logging.getLogger(__name__)
-log_levels = logging.getLevelNamesMapping()
-
-env_log_level = os.getenv('CMP_LOG')
+log_levels = [lv.lower() for lv in logging.getLevelNamesMapping()]
 
 libvirt.registerErrorHandler(
     lambda userdata, err: None,  # noqa: ARG005
@@ -253,6 +251,7 @@ def cli() -> None:  # noqa: PLR0915
     root.add_argument(
         '-l',
         '--log-level',
+        type=str.lower,
         metavar='LEVEL',
         choices=log_levels,
         help='log level [envvar: CMP_LOG]',
@@ -369,9 +368,12 @@ def cli() -> None:  # noqa: PLR0915
         sys.exit()
 
     # Set logging level
-    log_level = args.log_level or env_log_level
-    if log_level in log_levels:
-        logging.basicConfig(level=log_levels[log_level])
+    log_level = args.log_level or os.getenv('CMP_LOG')
+
+    if isinstance(log_level, str) and log_level.lower() in log_levels:
+        logging.basicConfig(
+            level=logging.getLevelNamesMapping()[log_level.upper()]
+        )
 
     log.debug('CLI started with args: %s', args)
     # Perform actions
