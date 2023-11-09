@@ -44,7 +44,7 @@ select = ['ALL']
 ignore = [
     'Q000', 'Q003', 'D211', 'D212', 'ANN101', 'ISC001', 'COM812',
     'D203', 'ANN204', 'T201',
-    'EM102', 'TRY003',  # maybe not ignore?
+    'EM102', 'TRY003', 'EM101',  # maybe not ignore?
     'TD003', 'TD006', 'FIX002',  # todo strings linting
 ]
 exclude = ['__init__.py']

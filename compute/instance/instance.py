@@ -218,13 +218,13 @@ class Instance:
 
     def get_info(self) -> InstanceInfo:
         """Return instance info."""
-        _info = self.domain.info()
+        info = self.domain.info()
         return InstanceInfo(
-            state=self._expand_instance_state(_info[0]),
-            max_memory=_info[1],
-            memory=_info[2],
-            nproc=_info[3],
-            cputime=_info[4],
+            state=self._expand_instance_state(info[0]),
+            max_memory=info[1],
+            memory=info[2],
+            nproc=info[3],
+            cputime=info[4],
         )
 
     def get_status(self) -> str:
@@ -405,10 +405,10 @@ class Instance:
         :param nvcpus: Number of vCPUs
         :param live: Affect a running instance
         """
-        if nvcpus == 0:
-            raise InstanceError(
-                f'Cannot set zero vCPUs for instance={self.name}'
-            )
+        if nvcpus <= 0:
+            raise InstanceError('Cannot set zero vCPUs')
+        if nvcpus > self.get_max_vcpus():
+            raise InstanceError('vCPUs count is greather than max_vcpus')
         if nvcpus == self.get_info().nproc:
             log.warning(
                 'Instance instance=%s already have %s vCPUs, nothing to do',
@@ -461,11 +461,18 @@ class Instance:
         :param memory: Memory value in mebibytes
         :param live: Affect a running instance
         """
-        if memory == 0:
-            raise InstanceError(
-                f'Cannot set zero memory for instance={self.name}'
+        if memory <= 0:
+            raise InstanceError('Cannot set zero memory')
+        if (memory * 1024) > self.get_max_memory():
+            raise InstanceError('Memory is greather than max_memory')
+        if (memory * 1024) == self.get_info().memory:
+            log.warning(
+                "Instance '%s' already have %s memory, nothing to do",
+                self.name,
+                memory,
             )
-        if live and self.info()['state'] == libvirt.VIR_DOMAIN_RUNNING:
+            return
+        if live and self.is_running():
             flags = (
                 libvirt.VIR_DOMAIN_AFFECT_LIVE
                 | libvirt.VIR_DOMAIN_AFFECT_CONFIG
@@ -473,9 +480,6 @@ class Instance:
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
         try:
-            self.domain.setMemoryFlags(
-                memory * 1024, flags=libvirt.VIR_DOMAIN_MEM_MAXIMUM
-            )
             self.domain.setMemoryFlags(memory * 1024, flags=flags)
         except libvirt.libvirtError as e:
             msg = f'Cannot set memory for instance={self.name} {memory=}: {e}'
@@ -535,11 +539,13 @@ class Instance:
 
     def pause(self) -> None:
         """Pause instance."""
-        raise NotImplementedError
+        if not self.is_running():
+            raise InstanceError('Cannot pause inactive instance')
+        self.domain.suspend()
 
     def resume(self) -> None:
         """Resume paused instance."""
-        raise NotImplementedError
+        self.domain.resume()
 
     def list_ssh_keys(self, user: str) -> list[str]:
         """

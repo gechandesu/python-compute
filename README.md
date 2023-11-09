@@ -12,9 +12,9 @@ Run `make serve-docs`. See [Development](#development) below.
 - [ ] CDROM
 - [ ] cloud-init for provisioning instances
 - [x] Instance power management
-- [ ] Instance pause and resume
+- [x] Instance pause and resume
 - [x] vCPU hotplug
-- [ ] Memory hotplug
+- [x] Memory hotplug
 - [x] Hot disk resize [not tested]
 - [ ] CPU topology customization
 - [x] CPU customization (emulation mode, model, vendor, features)
@@ -27,18 +27,18 @@ Run `make serve-docs`. See [Development](#development) below.
 - [ ] Instance resources usage stats
 - [ ] SSH-keys management
 - [x] Setting user passwords in guest [not tested]
-- [ ] LXC
 - [x] QCOW2 disks support
 - [ ] ZVOL support
 - [ ] Network disks support
 - [ ] Images service integration (Images service is not implemented yet)
 - [ ] Manage storage pools
+- [ ] Idempotency
+- [ ] CLI [in progress]
+- [ ] HTTP API
+- [ ] Instance migrations
 - [ ] Instance snapshots
 - [ ] Instance backups
-- [ ] Instance migrations
-- [ ] Idempotency
-- [ ] HTTP API
-- [ ] CLI [in progress]
+- [ ] LXC
 
 ## Development
 

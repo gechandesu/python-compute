@@ -219,12 +219,21 @@ def main(session: Session, args: argparse.Namespace) -> None:
         case 'reset':
             instance = session.get_instance(args.instance)
             instance.reset()
+        case 'pause':
+            instance = session.get_instance(args.instance)
+            instance.pause()
+        case 'resume':
+            instance = session.get_instance(args.instance)
+            instance.resume()
         case 'status':
             instance = session.get_instance(args.instance)
             print(instance.status)
         case 'setvcpus':
             instance = session.get_instance(args.instance)
             instance.set_vcpus(args.nvcpus, live=True)
+        case 'setmem':
+            instance = session.get_instance(args.instance)
+            instance.set_memory(args.memory, live=True)
 
 
 def cli() -> None:  # noqa: PLR0915
@@ -352,6 +361,14 @@ def cli() -> None:  # noqa: PLR0915
     reset = subparsers.add_parser('reset', help='reset instance')
     reset.add_argument('instance')
 
+    # pause subcommand
+    pause = subparsers.add_parser('pause', help='pause instance')
+    pause.add_argument('instance')
+
+    # resume subcommand
+    resume = subparsers.add_parser('resume', help='resume paused instance')
+    resume.add_argument('instance')
+
     # status subcommand
     status = subparsers.add_parser('status', help='display instance status')
     status.add_argument('instance')
@@ -360,6 +377,11 @@ def cli() -> None:  # noqa: PLR0915
     setvcpus = subparsers.add_parser('setvcpus', help='set vCPU number')
     setvcpus.add_argument('instance')
     setvcpus.add_argument('nvcpus', type=int)
+
+    # setmem subcommand
+    setmem = subparsers.add_parser('setmem', help='set memory size')
+    setmem.add_argument('instance')
+    setmem.add_argument('memory', type=int, help='memory in MiB')
 
     # Run parser
     args = root.parse_args()
