@@ -1,6 +1,6 @@
 # Compute
 
-Compute-instance management library and tools.
+Compute instances management library and tools.
 
 ## Docs
 
@@ -10,6 +10,7 @@ Run `make serve-docs`. See [Development](#development) below.
 
 - [x] Create instances
 - [ ] CDROM
+- [ ] cloud-init for provisioning instances
 - [x] Instance power management
 - [ ] Instance pause and resume
 - [x] vCPU hotplug
@@ -35,10 +36,13 @@ Run `make serve-docs`. See [Development](#development) below.
 - [ ] Instance snapshots
 - [ ] Instance backups
 - [ ] Instance migrations
+- [ ] Idempotency
 - [ ] HTTP API
-- [ ] Full functional CLI [in progress]
+- [ ] CLI [in progress]
 
 ## Development
+
+Python 3.11+ is required.
 
 Install [poetry](https://python-poetry.org/), clone this repository and run:
 
