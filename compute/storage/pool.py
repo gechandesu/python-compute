@@ -7,7 +7,7 @@ from typing import NamedTuple
 import libvirt
 from lxml import etree
 
-from compute.exceptions import StoragePoolError
+from compute.exceptions import StoragePoolError, VolumeNotFoundError
 
 from .volume import Volume, VolumeConfig
 
@@ -99,13 +99,8 @@ class StoragePool:
             vol = self.pool.storageVolLookupByName(name)
             return Volume(self.pool, vol)
         except libvirt.libvirtError as e:
-            # TODO @ge: Raise VolumeNotFoundError instead
-            if (
-                e.get_error_domain() == libvirt.VIR_FROM_STORAGE
-                or e.get_error_code() == libvirt.VIR_ERR_NO_STORAGE_VOL
-            ):
-                log.exception(e.get_error_message())
-                return None
+            if e.get_error_code() == libvirt.VIR_ERR_NO_STORAGE_VOL:
+                raise VolumeNotFoundError(name) from e
             log.exception('unexpected error from libvirt')
             raise StoragePoolError(e) from e
 

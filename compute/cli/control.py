@@ -234,13 +234,20 @@ def main(session: Session, args: argparse.Namespace) -> None:
         case 'setmem':
             instance = session.get_instance(args.instance)
             instance.set_memory(args.memory, live=True)
+        case 'setpasswd':
+            instance = session.get_instance(args.instance)
+            instance.set_user_password(
+                args.username,
+                args.password,
+                encrypted=args.encrypted,
+            )
 
 
 def cli() -> None:  # noqa: PLR0915
-    """Parse command line arguments."""
+    """Return command line arguments parser."""
     root = argparse.ArgumentParser(
         prog='compute',
-        description='manage compute instances and storage volumes.',
+        description='manage compute instances',
         formatter_class=argparse.RawTextHelpFormatter,
     )
     root.add_argument(
@@ -383,13 +390,27 @@ def cli() -> None:  # noqa: PLR0915
     setmem.add_argument('instance')
     setmem.add_argument('memory', type=int, help='memory in MiB')
 
-    # Run parser
+    # setpasswd subcommand
+    setpasswd = subparsers.add_parser(
+        'setpasswd',
+        help='set user password in guest',
+    )
+    setpasswd.add_argument('instance')
+    setpasswd.add_argument('username')
+    setpasswd.add_argument('password')
+    setpasswd.add_argument(
+        '-e',
+        '--encrypted',
+        action='store_true',
+        default=False,
+        help='set it if password is already encrypted',
+    )
+
     args = root.parse_args()
     if args.command is None:
         root.print_help()
         sys.exit()
 
-    # Set logging level
     log_level = args.log_level or os.getenv('CMP_LOG')
 
     if isinstance(log_level, str) and log_level.lower() in log_levels:
@@ -398,7 +419,6 @@ def cli() -> None:  # noqa: PLR0915
         )
 
     log.debug('CLI started with args: %s', args)
-    # Perform actions
     try:
         with Session(args.connect) as session:
             main(session, args)

@@ -56,15 +56,17 @@ class DiskConfig:
     to compute instances.
     """
 
+    disk_type: str
+    source: str | Path
     target: str
-    path: str
     readonly: bool = False
 
     def to_xml(self) -> str:
         """Return XML config for libvirt."""
-        xml = E.disk(type='file', device='disk')
+        xml = E.disk(type=self.disk_type, device='disk')
         xml.append(E.driver(name='qemu', type='qcow2', cache='writethrough'))
-        xml.append(E.source(file=self.path))
+        if self.disk_type == 'file':
+            xml.append(E.source(file=str(self.source)))
         xml.append(E.target(dev=self.target, bus='virtio'))
         if self.readonly:
             xml.append(E.readonly())

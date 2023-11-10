@@ -37,6 +37,22 @@ class StoragePoolError(ComputeServiceError):
     """Something went wrong when operating with storage pool."""
 
 
+class StoragePoolNotFoundError(StoragePoolError):
+    """Storage pool not found."""
+
+    def __init__(self, msg: str):
+        """Initialise StoragePoolNotFoundError."""
+        super().__init__(f"storage pool named '{msg}' not found")
+
+
+class VolumeNotFoundError(StoragePoolError):
+    """Storage volume not found."""
+
+    def __init__(self, msg: str):
+        """Initialise VolumeNotFoundError."""
+        super().__init__(f"storage volume '{msg}' not found")
+
+
 class InstanceError(ComputeServiceError):
     """Something went wrong while interacting with the domain."""
 

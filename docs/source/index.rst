@@ -1,12 +1,12 @@
 Compute
 =======
 
-Compute-instance management library.
+Compute instances management library.
 
 .. toctree::
     :maxdepth: 1
 
-    python-api/index
+    pyapi/index
 
 Indices and tables
 ------------------

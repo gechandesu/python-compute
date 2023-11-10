@@ -78,8 +78,8 @@ class GuestAgent:
         except GuestAgentError:
             return False
 
-    def available_commands(self) -> set[str]:
-        """Return set of available guest agent commands."""
+    def get_supported_commands(self) -> set[str]:
+        """Return set of supported guest agent commands."""
         output = self.execute({'execute': 'guest-info', 'arguments': {}})
         return {
             cmd['name']
@@ -94,8 +94,9 @@ class GuestAgent:
         :param commands: List of required commands
         :raise: GuestAgentCommandNotSupportedError
         """
+        supported = self.get_supported_commands()
         for command in commands:
-            if command not in self.available_commands():
+            if command not in supported:
                 raise GuestAgentCommandNotSupportedError(command)
 
     def guest_exec(  # noqa: PLR0913

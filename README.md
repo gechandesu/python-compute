@@ -20,13 +20,13 @@ Run `make serve-docs`. See [Development](#development) below.
 - [x] CPU customization (emulation mode, model, vendor, features)
 - [ ] BIOS/UEFI settings
 - [x] Device attaching
-- [ ] Device detaching
+- [x] Device detaching
 - [ ] GPU passthrough
 - [ ] CPU guarantied resource percent support
 - [x] QEMU Guest Agent management
 - [ ] Instance resources usage stats
 - [ ] SSH-keys management
-- [x] Setting user passwords in guest [not tested]
+- [x] Setting user passwords in guest
 - [x] QCOW2 disks support
 - [ ] ZVOL support
 - [ ] Network disks support

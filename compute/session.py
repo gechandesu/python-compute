@@ -10,7 +10,11 @@ from uuid import uuid4
 import libvirt
 from lxml import etree
 
-from .exceptions import InstanceNotFoundError, SessionError
+from .exceptions import (
+    InstanceNotFoundError,
+    SessionError,
+    StoragePoolNotFoundError,
+)
 from .instance import Instance, InstanceConfig, InstanceSchema
 from .storage import DiskConfig, StoragePool, VolumeConfig
 from .utils import units
@@ -23,10 +27,14 @@ class Capabilities(NamedTuple):
     """Store domain capabilities info."""
 
     arch: str
-    virt: str
+    virt_type: str
     emulator: str
     machine: str
     max_vcpus: int
+    cpu_vendor: str
+    cpu_model: str
+    cpu_features: dict
+    usable_cpus: list[dict]
 
 
 class NodeInfo(NamedTuple):
@@ -101,16 +109,47 @@ class Session(AbstractContextManager):
             threads=info[7],
         )
 
+    def _cap_get_usable_cpus(self, xml: etree.Element) -> list[dict]:
+        x = xml.xpath('/domainCapabilities/cpu/mode[@name="custom"]')[0]
+        cpus = []
+        for cpu in x.findall('model'):
+            if cpu.get('usable') == 'yes':
+                cpus.append(  # noqa: PERF401
+                    {
+                        'vendor': cpu.get('vendor'),
+                        'model': cpu.text,
+                    }
+                )
+        return cpus
+
+    def _cap_get_cpu_features(self, xml: etree.Element) -> dict:
+        x = xml.xpath('/domainCapabilities/cpu/mode[@name="host-model"]')[0]
+        require = []
+        disable = []
+        for feature in x.findall('feature'):
+            policy = feature.get('policy')
+            name = feature.get('name')
+            if policy == 'require':
+                require.append(name)
+            if policy == 'disable':
+                disable.append(name)
+        return {'require': require, 'disable': disable}
+
     def get_capabilities(self) -> Capabilities:
         """Return capabilities e.g. arch, virt, emulator, etc."""
         prefix = '/domainCapabilities'
+        hprefix = f'{prefix}/cpu/mode[@name="host-model"]'
         caps = etree.fromstring(self.connection.getDomainCapabilities())  # noqa: S320
         return Capabilities(
             arch=caps.xpath(f'{prefix}/arch/text()')[0],
-            virt=caps.xpath(f'{prefix}/domain/text()')[0],
+            virt_type=caps.xpath(f'{prefix}/domain/text()')[0],
             emulator=caps.xpath(f'{prefix}/path/text()')[0],
             machine=caps.xpath(f'{prefix}/machine/text()')[0],
             max_vcpus=int(caps.xpath(f'{prefix}/vcpu/@max')[0]),
+            cpu_vendor=caps.xpath(f'{hprefix}/vendor/text()')[0],
+            cpu_model=caps.xpath(f'{hprefix}/model/text()')[0],
+            cpu_features=self._cap_get_cpu_features(caps),
+            usable_cpus=self._cap_get_cpus(caps),
         )
 
     def create_instance(self, **kwargs: Any) -> Instance:
@@ -169,7 +208,7 @@ class Session(AbstractContextManager):
             volumes_pool = self.get_storage_pool(self.VOLUMES_POOL)
             log.info('Building volume configuration...')
             if not volume.source:
-                vol_name = f'{config.name}-{volume.target}-{uuid4()}.qcow2'
+                vol_name = f'{uuid4()}.qcow2'
             else:
                 vol_name = volume.source
             vol_conf = VolumeConfig(
@@ -196,7 +235,12 @@ class Session(AbstractContextManager):
                 volumes_pool.create_volume(vol_conf)
             log.info('Attaching volume to instance...')
             instance.attach_device(
-                DiskConfig(path=vol_conf.path, target=volume.target)
+                DiskConfig(
+                    disk_type=volume.type,
+                    source=vol_conf.path,
+                    target=volume.target,
+                    readonly=volume.is_readonly,
+                )
             )
         return instance
 
@@ -204,10 +248,10 @@ class Session(AbstractContextManager):
         """Get compute instance by name."""
         try:
             return Instance(self.connection.lookupByName(name))
-        except libvirt.libvirtError as err:
-            if err.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
-                raise InstanceNotFoundError(name) from err
-            raise SessionError(err) from err
+        except libvirt.libvirtError as e:
+            if e.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+                raise InstanceNotFoundError(name) from e
+            raise SessionError(e) from e
 
     def list_instances(self) -> list[Instance]:
         """List all instances."""
@@ -215,8 +259,12 @@ class Session(AbstractContextManager):
 
     def get_storage_pool(self, name: str) -> StoragePool:
         """Get storage pool by name."""
-        # TODO @ge: handle Storage pool not found error
-        return StoragePool(self.connection.storagePoolLookupByName(name))
+        try:
+            return StoragePool(self.connection.storagePoolLookupByName(name))
+        except libvirt.libvirtError as e:
+            if e.get_error_code() == libvirt.VIR_ERR_NO_STORAGE_POOL:
+                raise StoragePoolNotFoundError(name) from e
+            raise SessionError(e) from e
 
     def list_storage_pools(self) -> list[StoragePool]:
         """List all strage pools."""

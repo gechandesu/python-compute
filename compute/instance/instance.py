@@ -13,6 +13,7 @@ from compute.exceptions import (
     GuestAgentCommandNotSupportedError,
     InstanceError,
 )
+from compute.storage import DiskConfig
 from compute.utils import units
 
 from .guest_agent import GuestAgent
@@ -181,7 +182,7 @@ class InstanceInfo(NamedTuple):
 
 
 class DeviceConfig:
-    """Abstract device description class."""
+    """Abstract device config class."""
 
 
 class Instance:
@@ -485,6 +486,11 @@ class Instance:
             msg = f'Cannot set memory for instance={self.name} {memory=}: {e}'
             raise InstanceError(msg) from e
 
+    def _get_disk_by_target(self, target: str) -> etree.Element:
+        xml = etree.fromstring(self.dump_xml())  # noqa: S320
+        child = xml.xpath(f'/domain/devices/disk/target[@dev="{target}"]')
+        return child[0].getparent() if child else None
+
     def attach_device(
         self, device: 'DeviceConfig', *, live: bool = False
     ) -> None:
@@ -501,6 +507,13 @@ class Instance:
             )
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
+        if isinstance(device, DiskConfig):  # noqa: SIM102
+            if self._get_disk_by_target(device.target):
+                log.warning(
+                    "Volume with target '%s' is already attached",
+                    device.target,
+                )
+                return
         self.domain.attachDeviceFlags(device.to_xml(), flags=flags)
 
     def detach_device(
@@ -519,7 +532,47 @@ class Instance:
             )
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
+        if isinstance(device, DiskConfig):  # noqa: SIM102
+            if self._get_disk_by_target(device.target) is None:
+                log.warning(
+                    "Volume with target '%s' is already detached",
+                    device.target,
+                )
+                return
         self.domain.detachDeviceFlags(device.to_xml(), flags=flags)
+
+    def detach_disk(self, name: str) -> None:
+        """
+        Detach disk device by target name.
+
+        There is no ``attach_disk()`` method. Use :method:`attach_device`
+        with :class:`DiskConfig` as parameter.
+
+        :param name: Disk name e.g. 'vda', 'sda', etc. This name may
+            not match the name of the disk inside the guest OS.
+        """
+        xml = self._get_disk_by_target(name)
+        if xml is None:
+            log.warning(
+                "Volume with target '%s' is already detached",
+                name,
+            )
+            return
+        disk_params = {
+            'disk_type': xml.get('type'),
+            'source': xml.find('source').get('file'),
+            'target': xml.find('target').get('dev'),
+            'readonly': False if xml.find('readonly') is None else True,  # noqa: SIM211
+        }
+        for param in disk_params:
+            if disk_params[param] is None:
+                msg = (
+                    f"Cannot detach volume with target '{name}': "
+                    f"parameter '{param}' is not defined in libvirt XML "
+                    'config on host.'
+                )
+                raise InstanceError(msg)
+        self.detach_device(DiskConfig(**disk_params), live=True)
 
     def resize_volume(
         self, name: str, capacity: int, unit: units.DataUnit
@@ -573,7 +626,9 @@ class Instance:
         """
         raise NotImplementedError
 
-    def set_user_password(self, user: str, password: str) -> None:
+    def set_user_password(
+        self, user: str, password: str, *, encrypted: bool = False
+    ) -> None:
         """
         Set new user password in guest OS.
 
@@ -581,8 +636,16 @@ class Instance:
 
         :param user: Username.
         :param password: Password.
+        :param encrypted: Set it to True if password is already encrypted.
+            Right encryption method depends on guest OS.
         """
-        self.domain.setUserPassword(user, password)
+        if not self.guest_agent.is_available():
+            raise InstanceError(
+                'Cannot change password: guest agent is unavailable'
+            )
+        self.guest_agent.raise_for_commands(['guest-set-user-password'])
+        flags = libvirt.VIR_DOMAIN_PASSWORD_ENCRYPTED if encrypted else 0
+        self.domain.setUserPassword(user, password, flags=flags)
 
     def dump_xml(self, *, inactive: bool = False) -> str:
         """Return instance XML description."""
