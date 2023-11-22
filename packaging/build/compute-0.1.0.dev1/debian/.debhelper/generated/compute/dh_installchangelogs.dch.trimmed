@@ -1,0 +1,5 @@
+compute (0.1.0.dev1-1) UNRELEASED; urgency=medium
+
+  * This is the development build, see commits in upstream repo for info.
+
+ -- ge <ge@nixhacks.net>  Wed, 22 Nov 2023 23:06:43 +0000

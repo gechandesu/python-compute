@@ -1,0 +1,490 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>instance &#8212; Compute 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="guest_agent" href="guest_agent.html" />
+    <link rel="prev" title="instance" href="index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-compute.instance.instance">
+<span id="instance"></span><h1><code class="docutils literal notranslate"><span class="pre">instance</span></code><a class="headerlink" href="#module-compute.instance.instance" title="Permalink to this heading">¶</a></h1>
+<p>Manage compute instances.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">compute.instance.instance.</span></span><span class="sig-name descname"><span class="pre">Instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">virDomain</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.instance.instance.Instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manage compute instances.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">virDomain</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.instance.instance.Instance.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialise Instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<em>libvirt.virDomain</em>) – domain object</p></li>
+<li><p><strong>connection</strong> (<em>libvirt.virConnect</em>) – connection object</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – domain name</p></li>
+<li><p><strong>guest_agent</strong> (<a class="reference internal" href="guest_agent.html#compute.instance.guest_agent.GuestAgent" title="compute.instance.guest_agent.GuestAgent"><em>GuestAgent</em></a>) – <code class="xref py py-class docutils literal notranslate"><span class="pre">GuestAgent</span></code> object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>domain</strong> – libvirt domain object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.attach_device">
+<span class="sig-name descname"><span class="pre">attach_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EntityConfig</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.attach_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attach device to compute instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> – Object with device description e.g. DiskConfig</p></li>
+<li><p><strong>live</strong> – Affect a running instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Undefine instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.delete_ssh_keys">
+<span class="sig-name descname"><span class="pre">delete_ssh_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssh_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.delete_ssh_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove SSH keys from guest for specific user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>user</strong> – Username.</p></li>
+<li><p><strong>ssh_keys</strong> – List of public SSH keys.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.detach_device">
+<span class="sig-name descname"><span class="pre">detach_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EntityConfig</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.detach_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dettach device from compute instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> – Object with device description e.g. DiskConfig</p></li>
+<li><p><strong>live</strong> – Affect a running instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.detach_disk">
+<span class="sig-name descname"><span class="pre">detach_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.detach_disk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detach disk device by target name.</p>
+<p>There is no <code class="docutils literal notranslate"><span class="pre">attach_disk()</span></code> method. Use <a class="reference internal" href="#compute.instance.instance.Instance.attach_device" title="compute.instance.instance.Instance.attach_device"><code class="xref py py-func docutils literal notranslate"><span class="pre">attach_device()</span></code></a>
+with <code class="xref py py-class docutils literal notranslate"><span class="pre">DiskConfig</span></code> as argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> – Disk name e.g. ‘vda’, ‘sda’, etc. This name may
+not match the name of the disk inside the guest OS.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.dump_xml">
+<span class="sig-name descname"><span class="pre">dump_xml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inactive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.dump_xml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return instance XML description.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.get_disks">
+<span class="sig-name descname"><span class="pre">get_disks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../storage/volume.html#compute.storage.volume.DiskConfig" title="compute.storage.volume.DiskConfig"><span class="pre">compute.storage.volume.DiskConfig</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.get_disks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of attached disks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.get_info">
+<span class="sig-name descname"><span class="pre">get_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#compute.instance.instance.InstanceInfo" title="compute.instance.instance.InstanceInfo"><span class="pre">InstanceInfo</span></a></span></span><a class="headerlink" href="#compute.instance.instance.Instance.get_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return instance info.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.get_max_memory">
+<span class="sig-name descname"><span class="pre">get_max_memory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.get_max_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum memory value for domain in KiB.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.get_max_vcpus">
+<span class="sig-name descname"><span class="pre">get_max_vcpus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.get_max_vcpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum vCPUs number for domain.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.get_ssh_keys">
+<span class="sig-name descname"><span class="pre">get_ssh_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.get_ssh_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of SSH keys on guest for specific user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>user</strong> – Username.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.get_status">
+<span class="sig-name descname"><span class="pre">get_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.get_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return instance state: ‘running’, ‘shutoff’, etc.</p>
+<p>Reference:
+<a class="reference external" href="https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState">https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState</a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.is_autostart">
+<span class="sig-name descname"><span class="pre">is_autostart</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.is_autostart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if instance autostart is enabled, else return False.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.is_running">
+<span class="sig-name descname"><span class="pre">is_running</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.is_running" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if instance is running, else return False.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.pause">
+<span class="sig-name descname"><span class="pre">pause</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.pause" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pause instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.power_reset">
+<span class="sig-name descname"><span class="pre">power_reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.power_reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shutdown instance and start.</p>
+<p>By analogy with real hardware, this is a normal server shutdown,
+and then turning off from the power supply and turning it on again.</p>
+<p>This method is applicable in cases where there has been a
+configuration change in libvirt and you need to restart the
+instance to apply the new configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.reboot">
+<span class="sig-name descname"><span class="pre">reboot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.reboot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send ACPI signal to guest OS to reboot. OS may ignore this.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset instance.</p>
+<p>Copypaste from libvirt doc:</p>
+<p>Reset a domain immediately without any guest OS shutdown.
+Reset emulates the power reset button on a machine, where all
+hardware sees the RST line set and reinitializes internal state.</p>
+<p>Note that there is a risk of data loss caused by reset without any
+guest OS shutdown.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.resize_disk">
+<span class="sig-name descname"><span class="pre">resize_disk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../utils.html#compute.utils.units.DataUnit" title="compute.utils.units.DataUnit"><span class="pre">DataUnit</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.resize_disk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resize attached block device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Disk device name e.g. <cite>vda</cite>, <cite>sda</cite>, etc.</p></li>
+<li><p><strong>capacity</strong> – New capacity.</p></li>
+<li><p><strong>unit</strong> – Capacity unit.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.resume">
+<span class="sig-name descname"><span class="pre">resume</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.resume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resume paused instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.set_autostart">
+<span class="sig-name descname"><span class="pre">set_autostart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.set_autostart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set autostart flag for instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>enabled</strong> – Bool argument to set or unset autostart flag.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.set_memory">
+<span class="sig-name descname"><span class="pre">set_memory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.set_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set memory.</p>
+<p>If <cite>live</cite> is True and instance is not currently running set memory
+in config and will applied when instance boot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>memory</strong> – Memory value in mebibytes</p></li>
+<li><p><strong>live</strong> – Affect a running instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.set_ssh_keys">
+<span class="sig-name descname"><span class="pre">set_ssh_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssh_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.set_ssh_keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add SSH keys to guest for specific user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>user</strong> – Username.</p></li>
+<li><p><strong>ssh_keys</strong> – List of public SSH keys.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.set_user_password">
+<span class="sig-name descname"><span class="pre">set_user_password</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encrypted</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.set_user_password" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set new user password in guest OS.</p>
+<p>This action performs by guest agent inside the guest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>user</strong> – Username.</p></li>
+<li><p><strong>password</strong> – Password.</p></li>
+<li><p><strong>encrypted</strong> – Set it to True if password is already encrypted.
+Right encryption method depends on guest OS.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.set_vcpus">
+<span class="sig-name descname"><span class="pre">set_vcpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nvcpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.set_vcpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set vCPU number.</p>
+<p>If <cite>live</cite> is True and instance is not currently running vCPUs
+will set in config and will applied when instance boot.</p>
+<p>NB: Note that if this call is executed before the guest has
+finished booting, the guest may fail to process the change.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nvcpus</strong> – Number of vCPUs</p></li>
+<li><p><strong>live</strong> – Affect a running instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.shutdown">
+<span class="sig-name descname"><span class="pre">shutdown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.shutdown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shutdown instance.</p>
+<p>Shutdown methods:</p>
+<dl class="simple">
+<dt>SOFT</dt><dd><p>Use guest agent to shutdown. If guest agent is unavailable
+NORMAL method will be used.</p>
+</dd>
+<dt>NORMAL</dt><dd><p>Use method choosen by hypervisor to shutdown. Usually send ACPI
+signal to guest OS. OS may ignore ACPI e.g. if guest is hanged.</p>
+</dd>
+<dt>HARD</dt><dd><p>Shutdown instance without any guest OS shutdown. This is simular
+to unplugging machine from power. Internally send SIGTERM to
+instance process and destroy it gracefully.</p>
+</dd>
+<dt>UNSAFE</dt><dd><p>Force shutdown. Internally send SIGKILL to instance process.
+There is high data corruption risk!</p>
+</dd>
+</dl>
+<p>If method is None NORMAL method will used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method</strong> – Method used to shutdown instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.Instance.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.instance.instance.Instance.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start defined instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">compute.instance.instance.</span></span><span class="sig-name descname"><span class="pre">InstanceConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="schemas.html#compute.instance.schemas.InstanceSchema" title="compute.instance.schemas.InstanceSchema"><span class="pre">InstanceSchema</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.instance.instance.InstanceConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute instance XML config builder.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceConfig.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="schemas.html#compute.instance.schemas.InstanceSchema" title="compute.instance.schemas.InstanceSchema"><span class="pre">InstanceSchema</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.instance.instance.InstanceConfig.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialise InstanceConfig.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schema</strong> – InstanceSchema object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceConfig.to_xml">
+<span class="sig-name descname"><span class="pre">to_xml</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#compute.instance.instance.InstanceConfig.to_xml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return XML config for libvirt.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceInfo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">compute.instance.instance.</span></span><span class="sig-name descname"><span class="pre">InstanceInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_memory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nproc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cputime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.instance.instance.InstanceInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store compute instance info.</p>
+<p>Reference:
+<a class="reference external" href="https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInfo">https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInfo</a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceInfo.cputime">
+<span class="sig-name descname"><span class="pre">cputime</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.instance.instance.InstanceInfo.cputime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceInfo.max_memory">
+<span class="sig-name descname"><span class="pre">max_memory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.instance.instance.InstanceInfo.max_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceInfo.memory">
+<span class="sig-name descname"><span class="pre">memory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.instance.instance.InstanceInfo.memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceInfo.nproc">
+<span class="sig-name descname"><span class="pre">nproc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.instance.instance.InstanceInfo.nproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.instance.instance.InstanceInfo.state">
+<span class="sig-name descname"><span class="pre">state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.instance.instance.InstanceInfo.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Compute</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Python API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Python API</a><ul>
+  <li><a href="index.html"><code class="docutils literal notranslate"><span class="pre">instance</span></code></a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter"><code class="docutils literal notranslate"><span class="pre">instance</span></code></a></li>
+      <li>Next: <a href="guest_agent.html" title="next chapter"><code class="docutils literal notranslate"><span class="pre">guest_agent</span></code></a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Compute Authors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/pyapi/instance/instance.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

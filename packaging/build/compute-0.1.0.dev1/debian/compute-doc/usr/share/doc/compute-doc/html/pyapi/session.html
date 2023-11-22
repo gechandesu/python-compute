@@ -1,0 +1,331 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>session &#8212; Compute 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="instance" href="instance/index.html" />
+    <link rel="prev" title="Python API" href="index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-compute.session">
+<span id="session"></span><h1><code class="docutils literal notranslate"><span class="pre">session</span></code><a class="headerlink" href="#module-compute.session" title="Permalink to this heading">¶</a></h1>
+<p>Hypervisor session manager.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="compute.session.Capabilities">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">compute.session.</span></span><span class="sig-name descname"><span class="pre">Capabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">virt_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emulator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">machine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_vcpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_vendor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_features</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usable_cpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.session.Capabilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store domain capabilities info.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.arch">
+<span class="sig-name descname"><span class="pre">arch</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.Capabilities.arch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.cpu_features">
+<span class="sig-name descname"><span class="pre">cpu_features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#compute.session.Capabilities.cpu_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.cpu_model">
+<span class="sig-name descname"><span class="pre">cpu_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.Capabilities.cpu_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.cpu_vendor">
+<span class="sig-name descname"><span class="pre">cpu_vendor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.Capabilities.cpu_vendor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.emulator">
+<span class="sig-name descname"><span class="pre">emulator</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.Capabilities.emulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.machine">
+<span class="sig-name descname"><span class="pre">machine</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.Capabilities.machine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.max_vcpus">
+<span class="sig-name descname"><span class="pre">max_vcpus</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.Capabilities.max_vcpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.usable_cpus">
+<span class="sig-name descname"><span class="pre">usable_cpus</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#compute.session.Capabilities.usable_cpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 8</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.Capabilities.virt_type">
+<span class="sig-name descname"><span class="pre">virt_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.Capabilities.virt_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="compute.session.NodeInfo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">compute.session.</span></span><span class="sig-name descname"><span class="pre">NodeInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mhz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sockets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.session.NodeInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store compute node info.</p>
+<p>See <a class="reference external" href="https://libvirt.org/html/libvirt-libvirt-host.html#virNodeInfo">https://libvirt.org/html/libvirt-libvirt-host.html#virNodeInfo</a>
+NOTE: memory unit in libvirt docs is wrong! Actual unit is MiB.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.arch">
+<span class="sig-name descname"><span class="pre">arch</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#compute.session.NodeInfo.arch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.cores">
+<span class="sig-name descname"><span class="pre">cores</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.cores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.cpus">
+<span class="sig-name descname"><span class="pre">cpus</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.cpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.memory">
+<span class="sig-name descname"><span class="pre">memory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.mhz">
+<span class="sig-name descname"><span class="pre">mhz</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.mhz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.nodes">
+<span class="sig-name descname"><span class="pre">nodes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.sockets">
+<span class="sig-name descname"><span class="pre">sockets</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.sockets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="compute.session.NodeInfo.threads">
+<span class="sig-name descname"><span class="pre">threads</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#compute.session.NodeInfo.threads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="compute.session.Session">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">compute.session.</span></span><span class="sig-name descname"><span class="pre">Session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.session.Session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hypervisor session context manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>IMAGES_POOL</strong> – images storage pool name taken from env</p></li>
+<li><p><strong>VOLUMES_POOL</strong> – volumes storage pool name taken from env</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#compute.session.Session.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialise session with hypervisor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uri</strong> (<em>str</em>) – libvirt connection URI.</p></li>
+<li><p><strong>connection</strong> (<em>libvirt.virConnect</em>) – libvirt connection object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>uri</strong> – libvirt connection URI.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#compute.session.Session.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close connection to libvirt daemon.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.create_instance">
+<span class="sig-name descname"><span class="pre">create_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="instance/instance.html#compute.instance.instance.Instance" title="compute.instance.instance.Instance"><span class="pre">Instance</span></a></span></span><a class="headerlink" href="#compute.session.Session.create_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and return new compute instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Instance name.</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Instance title for humans.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – Some information about instance.</p></li>
+<li><p><strong>memory</strong> (<em>int</em>) – Memory in MiB.</p></li>
+<li><p><strong>max_memory</strong> (<em>int</em>) – Maximum memory in MiB.</p></li>
+<li><p><strong>vcpus</strong> (<em>int</em>) – Number of vCPUs.</p></li>
+<li><p><strong>max_vcpus</strong> (<em>int</em>) – Maximum vCPUs.</p></li>
+<li><p><strong>cpu</strong> (<em>dict</em>) – CPU configuration. See <code class="xref py py-class docutils literal notranslate"><span class="pre">CPUSchema</span></code> for info.</p></li>
+<li><p><strong>machine</strong> (<em>str</em>) – QEMU emulated machine.</p></li>
+<li><p><strong>emulator</strong> (<em>str</em>) – Path to emulator.</p></li>
+<li><p><strong>arch</strong> (<em>str</em>) – CPU architecture to virtualization.</p></li>
+<li><p><strong>boot</strong> (<em>dict</em>) – Boot settings. See <code class="xref py py-class docutils literal notranslate"><span class="pre">BootOptionsSchema</span></code>.</p></li>
+<li><p><strong>image</strong> (<em>str</em>) – Source disk image name for system disk.</p></li>
+<li><p><strong>volumes</strong> (<em>list</em><em>[</em><em>dict</em><em>]</em>) – List of storage volume configs. For more info
+see <code class="xref py py-class docutils literal notranslate"><span class="pre">VolumeSchema</span></code>.</p></li>
+<li><p><strong>network_interfaces</strong> (<em>list</em><em>[</em><em>dict</em><em>]</em>) – List of virtual network interfaces
+configs. See <code class="xref py py-class docutils literal notranslate"><span class="pre">NetworkInterfaceSchema</span></code> for more info.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.get_capabilities">
+<span class="sig-name descname"><span class="pre">get_capabilities</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#compute.session.Capabilities" title="compute.session.Capabilities"><span class="pre">Capabilities</span></a></span></span><a class="headerlink" href="#compute.session.Session.get_capabilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return capabilities e.g. arch, virt, emulator, etc.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.get_instance">
+<span class="sig-name descname"><span class="pre">get_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="instance/instance.html#compute.instance.instance.Instance" title="compute.instance.instance.Instance"><span class="pre">Instance</span></a></span></span><a class="headerlink" href="#compute.session.Session.get_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get compute instance by name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.get_node_info">
+<span class="sig-name descname"><span class="pre">get_node_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#compute.session.NodeInfo" title="compute.session.NodeInfo"><span class="pre">NodeInfo</span></a></span></span><a class="headerlink" href="#compute.session.Session.get_node_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return information about compute node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.get_storage_pool">
+<span class="sig-name descname"><span class="pre">get_storage_pool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="storage/pool.html#compute.storage.pool.StoragePool" title="compute.storage.pool.StoragePool"><span class="pre">StoragePool</span></a></span></span><a class="headerlink" href="#compute.session.Session.get_storage_pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get storage pool by name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.list_instances">
+<span class="sig-name descname"><span class="pre">list_instances</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="instance/instance.html#compute.instance.instance.Instance" title="compute.instance.instance.Instance"><span class="pre">compute.instance.instance.Instance</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#compute.session.Session.list_instances" title="Permalink to this definition">¶</a></dt>
+<dd><p>List all instances.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="compute.session.Session.list_storage_pools">
+<span class="sig-name descname"><span class="pre">list_storage_pools</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="storage/pool.html#compute.storage.pool.StoragePool" title="compute.storage.pool.StoragePool"><span class="pre">compute.storage.pool.StoragePool</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#compute.session.Session.list_storage_pools" title="Permalink to this definition">¶</a></dt>
+<dd><p>List all strage pools.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Compute</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Python API</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Python API</a></li>
+      <li>Next: <a href="instance/index.html" title="next chapter"><code class="docutils literal notranslate"><span class="pre">instance</span></code></a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Compute Authors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/pyapi/session.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

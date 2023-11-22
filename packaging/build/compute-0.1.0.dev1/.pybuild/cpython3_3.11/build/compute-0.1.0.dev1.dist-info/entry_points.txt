@@ -1,0 +1,3 @@
+[console_scripts]
+compute=compute.cli.control:cli
+

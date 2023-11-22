@@ -1,0 +1,12 @@
+Package: compute
+Version: 0.1.0.dev1-1
+Architecture: all
+Maintainer: ge <ge@nixhacks.net>
+Installed-Size: 118
+Depends: python3-libvirt, python3-lxml, python3-pydantic, python3-yaml, python3:any, qemu-system, qemu-utils, libvirt-daemon-system, libvirt-clients
+Recommends: dnsmasq
+Suggests: compute-doc
+Section: admin
+Priority: optional
+Homepage: https://git.lulzette.ru/hstack/compute
+Description: Compute instances management library and tools (Python 3)
