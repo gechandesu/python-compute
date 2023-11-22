@@ -122,7 +122,7 @@ with Session() as session:
 
 # Create compute instances
 
-Place your qcow2 image in `/volumes` directory. For example `debian_12.qcow2`.
+Place your qcow2 image in `/images` directory. For example `debian_12.qcow2`.
 
 Create `instance.yaml` file with following content:
 
