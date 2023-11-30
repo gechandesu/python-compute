@@ -18,16 +18,12 @@ _compute_root_cmd="
     status
     setvcpus
     setmem
-    setpasswd"
+    setpass"
 _compute_init_opts=""
-_compute_exec_opts="
-    --timeout
-    --executable
-    --env
-    --no-join-args"
+_compute_exec_opts="--timeout --executable --env --no-join-args"
 _compute_ls_opts=""
 _compute_start_opts=""
-_compute_shutdown_opts="--method"
+_compute_shutdown_opts="--soft --normal --hard --unsafe"
 _compute_reboot_opts=""
 _compute_reset_opts=""
 _compute_powrst_opts=""
@@ -36,13 +32,14 @@ _compute_resume_opts=""
 _compute_status_opts=""
 _compute_setvcpus_opts=""
 _compute_setmem_opts=""
-_compute_setpasswd_opts="--encrypted"
+_compute_setpass_opts="--encrypted"
 
 _compute_complete_instances()
 {
+    local base_name
     for file in /etc/libvirt/qemu/*.xml; do
-        nodir="${file##*/}"
-        printf '%s ' "${nodir//\.xml}"
+        base_name="${file##*/}"
+        printf '%s ' "${base_name//\.xml}"
     done
 }
 
@@ -80,7 +77,7 @@ _compute_complete()
                 status) _compute_compreply "$_compute_status_opts";;
                 setvcpus) _compute_compreply "$_compute_setvcpus_opts";;
                 setmem) _compute_compreply "$_compute_setmem_opts";;
-                setpasswd) _compute_compreply "$_compute_setpasswd_opts";;
+                setpass) _compute_compreply "$_compute_setpass_opts";;
                 *) COMPREPLY=()
             esac
             ;;

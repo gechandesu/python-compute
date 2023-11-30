@@ -17,14 +17,26 @@
 
 from abc import ABC, abstractmethod
 
+from pydantic import BaseModel, Extra
+
+
+class EntityModel(BaseModel):
+    """Basic entity model."""
+
+    class Config:
+        """Do not allow extra fields."""
+
+        extra = Extra.forbid
+
 
 class EntityConfig(ABC):
     """An abstract entity XML config builder class."""
 
     @abstractmethod
     def to_xml(self) -> str:
-        """Return device XML config."""
+        """Return entity XML config."""
         raise NotImplementedError
 
 
-DeviceConfig = EntityConfig
+class DeviceConfig(EntityConfig):
+    """An abstract device XML config."""

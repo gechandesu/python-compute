@@ -30,7 +30,7 @@ import yaml
 from pydantic import ValidationError
 
 from compute import __version__
-from compute.exceptions import ComputeError, GuestAgentTimeoutExceededError
+from compute.exceptions import ComputeError, GuestAgentTimeoutError
 from compute.instance import GuestAgent
 from compute.session import Session
 from compute.utils import ids
@@ -116,7 +116,7 @@ def _exec_guest_agent_command(
             decode_output=True,
             poll=True,
         )
-    except GuestAgentTimeoutExceededError as e:
+    except GuestAgentTimeoutError as e:
         sys.exit(
             f'{e}. NOTE: command may still running in guest, '
             f'PID={ga.last_pid}'

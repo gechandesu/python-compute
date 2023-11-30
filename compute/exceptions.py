@@ -36,12 +36,12 @@ class GuestAgentUnavailableError(GuestAgentError):
     """Guest agent is not connected or is unavailable."""
 
 
-class GuestAgentTimeoutExceededError(GuestAgentError):
+class GuestAgentTimeoutError(GuestAgentError):
     """QEMU timeout exceeded."""
 
-    def __init__(self, msg: int):
+    def __init__(self, seconds: int):
         """Initialise GuestAgentTimeoutExceededError."""
-        super().__init__(f'QEMU timeout ({msg} sec) exceeded')
+        super().__init__(f'QEMU timeout ({seconds} sec) exceeded')
 
 
 class GuestAgentCommandNotSupportedError(GuestAgentError):
@@ -78,3 +78,11 @@ class InstanceNotFoundError(InstanceError):
     def __init__(self, msg: str):
         """Initialise InstanceNotFoundError."""
         super().__init__(f"compute instance '{msg}' not found")
+
+
+class InvalidDataUnitError(ValueError, ComputeError):
+    """Data unit is not valid."""
+
+    def __init__(self, msg: str, units: list):
+        """Initialise InvalidDataUnitError."""
+        super().__init__(f'{msg}, valid units are: {", ".join(units)}')

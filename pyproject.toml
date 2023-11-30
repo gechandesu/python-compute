@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'compute'
-version = '0.1.0-dev1'
+version = '0.1.0-dev2'
 description = 'Compute instances management library and tools'
 authors = ['ge <ge@nixhacks.net>']
 readme = 'README.md'
@@ -42,11 +42,19 @@ target-version = 'py311'
 [tool.ruff.lint]
 select = ['ALL']
 ignore = [
-    'Q000', 'Q003', 'D211', 'D212',
-    'ANN101', 'ISC001', 'COM812',
-    'D203', 'ANN204', 'T201',
-    'EM102', 'TRY003', 'EM101',
-    'TD003', 'TD006', 'FIX002',  # 'todo' strings linting
+    'Q000', 'Q003',
+    'D211', 'D212',
+    'ANN101', 'ANN102', 'ANN204',
+    'ISC001',
+    'COM812',
+    'D203',
+    'T201',
+    'S320',
+    'EM102',
+    'TRY003',
+    'EM101',
+    'TD003', 'TD006',
+    'FIX002',
 ]
 exclude = ['__init__.py']
 

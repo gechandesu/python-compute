@@ -1,22 +1,17 @@
 Python API
 ==========
 
-The API allows you to perform actions on instances programmatically. Below is
-an example of changing parameters and launching the `myinstance` instance.
+The API allows you to perform actions on instances programmatically.
 
 .. code-block:: python
 
-    import logging
+    import compute
 
-    from compute import Session
-
-    logging.basicConfig(level=logging.DEBUG)
-
-    with Session() as session:
+    with compute.Session() as session:
         instance = session.get_instance('myinstance')
-        instance.set_vcpus(4)
-        instance.start()
-        instance.set_autostart(enabled=True)
+        info = instance.get_info()
+
+    print(info)
 
 
 :class:`Session` context manager provides an abstraction over :class:`libvirt.virConnect`

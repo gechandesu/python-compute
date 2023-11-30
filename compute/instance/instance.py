@@ -322,6 +322,8 @@ class Instance:
 
         :param method: Method used to shutdown instance
         """
+        if not self.is_running():
+            return
         methods = {
             'SOFT': libvirt.VIR_DOMAIN_SHUTDOWN_GUEST_AGENT,
             'NORMAL': libvirt.VIR_DOMAIN_SHUTDOWN_DEFAULT,
@@ -498,11 +500,6 @@ class Instance:
             msg = f'Cannot set memory for instance={self.name} {memory=}: {e}'
             raise InstanceError(msg) from e
 
-    def _get_disk_by_target(self, target: str) -> etree.Element:
-        xml = etree.fromstring(self.dump_xml())  # noqa: S320
-        child = xml.xpath(f'/domain/devices/disk/target[@dev="{target}"]')
-        return child[0].getparent() if child else None
-
     def attach_device(
         self, device: DeviceConfig, *, live: bool = False
     ) -> None:
@@ -520,7 +517,7 @@ class Instance:
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
         if isinstance(device, DiskConfig):  # noqa: SIM102
-            if self._get_disk_by_target(device.target):
+            if self.get_disk(device.target):
                 log.warning(
                     "Volume with target '%s' is already attached",
                     device.target,
@@ -545,13 +542,34 @@ class Instance:
         else:
             flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
         if isinstance(device, DiskConfig):  # noqa: SIM102
-            if self._get_disk_by_target(device.target) is None:
+            if self.get_disk(device.target) is None:
                 log.warning(
                     "Volume with target '%s' is already detached",
                     device.target,
                 )
                 return
         self.domain.detachDeviceFlags(device.to_xml(), flags=flags)
+
+    def get_disk(self, name: str) -> DiskConfig | None:
+        """
+        Return :class:`DiskConfig` by disk target name.
+
+        Return None if disk with specified target not found.
+
+        :param name: Disk name e.g. `vda`, `sda`, etc. This name may
+            not match the name of the disk inside the guest OS.
+        """
+        xml = etree.fromstring(self.dump_xml())
+        child = xml.xpath(f'/domain/devices/disk/target[@dev="{name}"]')
+        if len(child) == 0:
+            return None
+        return DiskConfig.from_xml(child[0].getparent())
+
+    def list_disks(self) -> list[DiskConfig]:
+        """Return list of attached disk devices."""
+        xml = etree.fromstring(self.dump_xml())
+        disks = xml.xpath('/domain/devices/disk')
+        return [DiskConfig.from_xml(disk) for disk in disks]
 
     def detach_disk(self, name: str) -> None:
         """
@@ -560,31 +578,17 @@ class Instance:
         There is no ``attach_disk()`` method. Use :func:`attach_device`
         with :class:`DiskConfig` as argument.
 
-        :param name: Disk name e.g. 'vda', 'sda', etc. This name may
+        :param name: Disk name e.g. `vda`, `sda`, etc. This name may
             not match the name of the disk inside the guest OS.
         """
-        xml = self._get_disk_by_target(name)
-        if xml is None:
+        disk = self.get_disk(name)
+        if disk is None:
             log.warning(
                 "Volume with target '%s' is already detached",
                 name,
             )
             return
-        disk_params = {
-            'disk_type': xml.get('type'),
-            'source': xml.find('source').get('file'),
-            'target': xml.find('target').get('dev'),
-            'readonly': False if xml.find('readonly') is None else True,  # noqa: SIM211
-        }
-        for param in disk_params:
-            if disk_params[param] is None:
-                msg = (
-                    f"Cannot detach volume with target '{name}': "
-                    f"parameter '{param}' is not defined in libvirt XML "
-                    'config on host.'
-                )
-                raise InstanceError(msg)
-        self.detach_device(DiskConfig(**disk_params), live=True)
+        self.detach_device(disk, live=True)
 
     def resize_disk(
         self, name: str, capacity: int, unit: units.DataUnit
@@ -592,7 +596,8 @@ class Instance:
         """
         Resize attached block device.
 
-        :param name: Disk device name e.g. `vda`, `sda`, etc.
+        :param name: Disk name e.g. `vda`, `sda`, etc. This name may
+            not match the name of the disk inside the guest OS.
         :param capacity: New capacity.
         :param unit: Capacity unit.
         """
@@ -601,10 +606,6 @@ class Instance:
             units.to_bytes(capacity, unit=unit),
             flags=libvirt.VIR_DOMAIN_BLOCK_RESIZE_BYTES,
         )
-
-    def get_disks(self) -> list[DiskConfig]:
-        """Return list of attached disks."""
-        raise NotImplementedError
 
     def pause(self) -> None:
         """Pause instance."""
@@ -616,31 +617,75 @@ class Instance:
         """Resume paused instance."""
         self.domain.resume()
 
-    def get_ssh_keys(self, user: str) -> list[str]:
+    def list_ssh_keys(self, user: str) -> list[str]:
         """
         Return list of SSH keys on guest for specific user.
 
         :param user: Username.
         """
-        raise NotImplementedError
+        self.guest_agent.raise_for_commands(['guest-ssh-get-authorized-keys'])
+        exc = self.guest_agent.guest_exec(
+            path='/bin/sh',
+            args=[
+                '-c',
+                (
+                    'su -c "'
+                    'if ! [ -f ~/.ssh/authorized_keys ]; then '
+                    'mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys; '
+                    'fi" '
+                    f'{user}'
+                ),
+            ],
+            capture_output=True,
+            decode_output=True,
+            poll=True,
+        )
+        log.debug(exc)
+        try:
+            return self.domain.authorizedSSHKeysGet(user)
+        except libvirt.libvirtError as e:
+            raise InstanceError(e) from e
 
-    def set_ssh_keys(self, user: str, ssh_keys: list[str]) -> None:
+    def set_ssh_keys(
+        self,
+        user: str,
+        keys: list[str],
+        *,
+        remove: bool = False,
+        append: bool = False,
+    ) -> None:
         """
         Add SSH keys to guest for specific user.
 
         :param user: Username.
-        :param ssh_keys: List of public SSH keys.
+        :param keys: List of authorized SSH keys.
+        :param append: Append keys to authorized SSH keys instead of
+            overriding authorized_keys file.
+        :param remove: Remove authorized keys listed in `keys` parameter.
         """
-        raise NotImplementedError
-
-    def delete_ssh_keys(self, user: str, ssh_keys: list[str]) -> None:
-        """
-        Remove SSH keys from guest for specific user.
-
-        :param user: Username.
-        :param ssh_keys: List of public SSH keys.
-        """
-        raise NotImplementedError
+        qemu_ga_commands = ['guest-ssh-add-authorized-keys']
+        if remove and append:
+            raise InstanceError(
+                "'append' and 'remove' parameters is mutually exclusive"
+            )
+        if not self.is_running():
+            raise InstanceError(
+                'Cannot add authorized SSH keys to inactive instance'
+            )
+        if append:
+            flags = libvirt.VIR_DOMAIN_AUTHORIZED_SSH_KEYS_SET_APPEND
+        elif remove:
+            flags = libvirt.VIR_DOMAIN_AUTHORIZED_SSH_KEYS_SET_REMOVE
+            qemu_ga_commands = ['guest-ssh-remove-authorized-keys']
+        else:
+            flags = 0
+        if keys.sort() == self.list_ssh_keys().sort():
+            return
+        self.guest_agent.raise_for_commands(qemu_ga_commands)
+        try:
+            self.domain.authorizedSSHKeysSet(user, keys, flags=flags)
+        except libvirt.libvirtError as e:
+            raise InstanceError(e) from e
 
     def set_user_password(
         self, user: str, password: str, *, encrypted: bool = False
@@ -655,10 +700,6 @@ class Instance:
         :param encrypted: Set it to True if password is already encrypted.
             Right encryption method depends on guest OS.
         """
-        if not self.guest_agent.is_available():
-            raise InstanceError(
-                'Cannot change password: guest agent is unavailable'
-            )
         self.guest_agent.raise_for_commands(['guest-set-user-password'])
         flags = libvirt.VIR_DOMAIN_PASSWORD_ENCRYPTED if encrypted else 0
         self.domain.setUserPassword(user, password, flags=flags)
@@ -669,7 +710,10 @@ class Instance:
         return self.domain.XMLDesc(flags)
 
     def delete(self) -> None:
-        """Undefine instance."""
-        # TODO @ge: delete local disks
+        """Delete instance with local disks."""
         self.shutdown(method='HARD')
+        for disk in self.list_disks():
+            if disk.disk_type == 'file':
+                volume = self.connection.storageVolLookupByPath(disk.source)
+                volume.delete()
         self.domain.undefine()

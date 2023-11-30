@@ -15,7 +15,7 @@
 
 """Command line interface for compute module."""
 
-from compute.cli import main
+from compute.cli import control
 
 
-main.cli()
+control.cli()

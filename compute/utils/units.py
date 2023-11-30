@@ -17,6 +17,8 @@
 
 from enum import StrEnum
 
+from compute.exceptions import InvalidDataUnitError
+
 
 class DataUnit(StrEnum):
     """Data units enumerated."""
@@ -28,22 +30,12 @@ class DataUnit(StrEnum):
     TIB = 'TiB'
 
 
-class InvalidDataUnitError(ValueError):
-    """Data unit is not valid."""
-
-    def __init__(self, msg: str):
-        """Initialise InvalidDataUnitError."""
-        super().__init__(
-            f'{msg}, valid units are: {", ".join(list(DataUnit))}'
-        )
-
-
 def to_bytes(value: int, unit: DataUnit = DataUnit.BYTES) -> int:
     """Convert value to bytes. See :class:`DataUnit`."""
     try:
         _ = DataUnit(unit)
     except ValueError as e:
-        raise InvalidDataUnitError(e) from e
+        raise InvalidDataUnitError(e, list(DataUnit)) from e
     powers = {
         DataUnit.BYTES: 0,
         DataUnit.KIB: 1,

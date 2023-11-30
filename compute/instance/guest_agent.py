@@ -27,7 +27,7 @@ import libvirt_qemu
 from compute.exceptions import (
     GuestAgentCommandNotSupportedError,
     GuestAgentError,
-    GuestAgentTimeoutExceededError,
+    GuestAgentTimeoutError,
     GuestAgentUnavailableError,
 )
 
@@ -199,7 +199,7 @@ class GuestAgent:
             sleep(poll_interval)
             now = time()
             if now - start_time > self.timeout:
-                raise GuestAgentTimeoutExceededError(self.timeout)
+                raise GuestAgentTimeoutError(self.timeout)
         log.debug(
             'Polling command pid=%s finished, time taken: %s seconds',
             pid,

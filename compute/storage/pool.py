@@ -49,12 +49,12 @@ class StoragePool:
 
     def _get_path(self) -> Path:
         """Return storage pool path."""
-        xml = etree.fromstring(self.pool.XMLDesc())  # noqa: S320
+        xml = etree.fromstring(self.pool.XMLDesc())
         return Path(xml.xpath('/pool/target/path/text()')[0])
 
     def get_usage_info(self) -> StoragePoolUsageInfo:
         """Return info about storage pool usage."""
-        xml = etree.fromstring(self.pool.XMLDesc())  # noqa: S320
+        xml = etree.fromstring(self.pool.XMLDesc())
         return StoragePoolUsageInfo(
             capacity=int(xml.xpath('/pool/capacity/text()')[0]),
             allocation=int(xml.xpath('/pool/allocation/text()')[0]),

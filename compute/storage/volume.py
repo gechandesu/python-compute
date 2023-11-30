@@ -18,6 +18,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from time import time
+from typing import Union
 
 import libvirt
 from lxml import etree
@@ -87,6 +88,28 @@ class DiskConfig(DeviceConfig):
         if self.readonly:
             xml.append(E.readonly())
         return etree.tostring(xml, encoding='unicode', pretty_print=True)
+
+    @classmethod
+    def from_xml(cls, xml: Union[str, etree.Element]) -> 'DiskConfig':  # noqa: UP007
+        """
+        Return :class:`DiskConfig` instance using existing XML config.
+
+        :param xml: Disk device XML configuration as :class:`str` or lxml
+            :class:`etree.Element` object.
+        """
+        if isinstance(xml, str):
+            xml = etree.fromstring(xml)
+        disk_params = {
+            'disk_type': xml.get('type'),
+            'source': xml.find('source').get('file'),
+            'target': xml.find('target').get('dev'),
+            'readonly': False if xml.find('readonly') is None else True,  # noqa: SIM211
+        }
+        for param in disk_params:
+            if disk_params[param] is None:
+                msg = f"Bad XML config: parameter '{param}' is not defined"
+                raise ValueError(msg)
+        return cls(**disk_params)
 
 
 class Volume:

@@ -19,18 +19,10 @@ import re
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, Extra, validator
+from pydantic import validator
 
+from compute.common import EntityModel
 from compute.utils.units import DataUnit
-
-
-class EntityModel(BaseModel):
-    """Basic entity model."""
-
-    class Config:
-        """Do not allow extra fields."""
-
-        extra = Extra.forbid
 
 
 class CPUEmulationMode(StrEnum):

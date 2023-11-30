@@ -5,7 +5,7 @@ DOCS_BUILDDIR = docs/build
 
 .PHONY: docs
 
-all: build
+all: docs build-deb
 
 requirements.txt:
 	poetry export -f requirements.txt -o requirements.txt

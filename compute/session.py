@@ -154,7 +154,7 @@ class Session(AbstractContextManager):
         """Return capabilities e.g. arch, virt, emulator, etc."""
         prefix = '/domainCapabilities'
         hprefix = f'{prefix}/cpu/mode[@name="host-model"]'
-        caps = etree.fromstring(self.connection.getDomainCapabilities())  # noqa: S320
+        caps = etree.fromstring(self.connection.getDomainCapabilities())
         return Capabilities(
             arch=caps.xpath(f'{prefix}/arch/text()')[0],
             virt_type=caps.xpath(f'{prefix}/domain/text()')[0],
