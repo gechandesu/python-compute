@@ -5,17 +5,17 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Compute instances management library."""
 
-__version__ = '0.1.0-dev1'
+__version__ = '0.1.0-dev2'
 
 from .instance import Instance, InstanceConfig, InstanceSchema
 from .session import Session

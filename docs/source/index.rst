@@ -3,9 +3,14 @@ Compute
 
 Compute instances management library.
 
-.. toctree::
-    :maxdepth: 1
+Contents
+--------
 
+.. toctree::
+    :maxdepth: 2
+
+    installation
+    cli/index
     pyapi/index
 
 Indices and tables

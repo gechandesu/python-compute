@@ -12,3 +12,10 @@
 
 .. automodule:: compute.utils.ids
    :members:
+
+
+``utils.dictutil``
+------------------
+
+.. automodule:: compute.utils.dictutil
+   :members:

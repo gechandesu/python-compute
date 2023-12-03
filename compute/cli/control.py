@@ -5,25 +5,25 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Command line interface."""
 
 import argparse
-import io
+import json
 import logging
 import os
+import re
 import shlex
+import string
 import sys
-from collections import UserDict
-from typing import Any
-from uuid import uuid4
+import uuid
 
 import libvirt
 import yaml
@@ -31,9 +31,10 @@ from pydantic import ValidationError
 
 from compute import __version__
 from compute.exceptions import ComputeError, GuestAgentTimeoutError
-from compute.instance import GuestAgent
+from compute.instance import GuestAgent, Instance, InstanceSchema
+from compute.instance.devices import DiskConfig, DiskDriver
 from compute.session import Session
-from compute.utils import ids
+from compute.utils import dictutil, ids
 
 
 log = logging.getLogger(__name__)
@@ -128,78 +129,77 @@ def _exec_guest_agent_command(
     sys.exit(output.exitcode)
 
 
-class _NotPresent:
-    """
-    Type for representing non-existent dictionary keys.
-
-    See :class:`_FillableDict`.
-    """
-
-
-class _FillableDict(UserDict):
-    """Use :method:`fill` to add key if not present."""
-
-    def __init__(self, data: dict):
-        self.data = data
-
-    def fill(self, key: str, value: Any) -> None:  # noqa: ANN401
-        if self.data.get(key, _NotPresent) is _NotPresent:
-            self.data[key] = value
-
-
-def _merge_dicts(a: dict, b: dict, path: list[str] | None = None) -> dict:
-    """Merge `b` into `a`. Return modified `a`."""
-    if path is None:
-        path = []
-    for key in b:
-        if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict):
-                _merge_dicts(a[key], b[key], [path + str(key)])
-            elif a[key] == b[key]:
-                pass  # same leaf value
-            else:
-                a[key] = b[key]  # replace existing key's values
-        else:
-            a[key] = b[key]
-    return a
-
-
-def _create_instance(session: Session, file: io.TextIOWrapper) -> None:
+def _init_instance(session: Session, args: argparse.Namespace) -> None:
     try:
-        data = _FillableDict(yaml.load(file.read(), Loader=yaml.SafeLoader))
+        data = yaml.load(args.file.read(), Loader=yaml.SafeLoader)
         log.debug('Read from file: %s', data)
     except yaml.YAMLError as e:
         sys.exit(f'error: cannot parse YAML: {e}')
-
     capabilities = session.get_capabilities()
     node_info = session.get_node_info()
-
-    data.fill('name', uuid4().hex)
-    data.fill('title', None)
-    data.fill('description', None)
-    data.fill('arch', capabilities.arch)
-    data.fill('machine', capabilities.machine)
-    data.fill('emulator', capabilities.emulator)
-    data.fill('max_vcpus', node_info.cpus)
-    data.fill('max_memory', node_info.memory)
-    data.fill('cpu', {})
-    cpu = {
-        'emulation_mode': 'host-passthrough',
-        'model': None,
-        'vendor': None,
-        'topology': None,
-        'features': None,
+    base_instance_config = {
+        'name': str(uuid.uuid4()),
+        'title': None,
+        'description': None,
+        'arch': capabilities.arch,
+        'machine': capabilities.machine,
+        'emulator': capabilities.emulator,
+        'max_vcpus': node_info.cpus,
+        'max_memory': node_info.memory,
+        'cpu': {
+            'emulation_mode': 'host-passthrough',
+            'model': None,
+            'vendor': None,
+            'topology': None,
+            'features': None,
+        },
+        'network_interfaces': [
+            {
+                'source': 'default',
+                'mac': ids.random_mac(),
+            },
+        ],
+        'boot': {'order': ['cdrom', 'hd']},
     }
-    data['cpu'] = _merge_dicts(data['cpu'], cpu)
-    data.fill(
-        'network_interfaces',
-        [{'source': 'default', 'mac': ids.random_mac()}],
-    )
-    data.fill('boot', {'order': ['cdrom', 'hd']})
-
+    data = dictutil.override(base_instance_config, data)
+    volumes = []
+    for volume in data['volumes']:
+        base_disk_config = {
+            'bus': 'virtio',
+            'is_readonly': False,
+            'driver': {
+                'name': 'qemu',
+                'type': 'qcow2',
+                'cache': 'writethrough',
+            },
+        }
+        base_cdrom_config = {
+            'bus': 'ide',
+            'target': 'hda',
+            'is_readonly': True,
+            'driver': {
+                'name': 'qemu',
+                'type': 'raw',
+                'cache': 'writethrough',
+            },
+        }
+        if volume.get('device') is None:
+            volume['device'] = 'disk'
+        if volume['device'] == 'disk':
+            volumes.append(dictutil.override(base_disk_config, volume))
+        if volume['device'] == 'cdrom':
+            volumes.append(dictutil.override(base_cdrom_config, volume))
+    data['volumes'] = volumes
     try:
         log.debug('Input data: %s', data)
-        session.create_instance(**data)
+        if args.test:
+            _ = InstanceSchema(**data)
+            print(json.dumps(dict(data), indent=4, sort_keys=True))
+            sys.exit()
+        instance = session.create_instance(**data)
+        print(f'initialised: {instance.name}')
+        if args.start:
+            instance.start()
     except ValidationError as e:
         for error in e.errors():
             fields = '.'.join([str(lc) for lc in error['loc']])
@@ -223,11 +223,84 @@ def _shutdown_instance(session: Session, args: argparse.Namespace) -> None:
     instance.shutdown(method)
 
 
+def _confirm(message: str, *, default: bool | None = None) -> None:
+    while True:
+        match default:
+            case True:
+                prompt = 'default: yes'
+            case False:
+                prompt = 'default: no'
+            case _:
+                prompt = 'no default'
+        try:
+            answer = input(f'{message} ({prompt}) ')
+        except KeyboardInterrupt:
+            sys.exit('aborted')
+        if not answer and isinstance(default, bool):
+            return default
+        if re.match(r'^y(es)?$', answer, re.I):
+            return True
+        if re.match(r'^no?$', answer, re.I):
+            return False
+        print("Please respond 'yes' or 'no'")
+
+
+def _delete_instance(session: Session, args: argparse.Namespace) -> None:
+    if args.yes is True or _confirm(
+        'this action is irreversible, continue?',
+        default=False,
+    ):
+        instance = session.get_instance(args.instance)
+        if args.save_volumes is False:
+            instance.delete(with_volumes=True)
+        else:
+            instance.delete()
+    else:
+        print('aborted')
+        sys.exit()
+
+
+def _get_disk_target(instance: Instance, prefix: str = 'hd') -> str:
+    disks_live = instance.list_disks(persistent=False)
+    disks_inactive = instance.list_disks(persistent=True)
+    disks = [d for d in disks_inactive if d not in disks_live]
+    devs = [d.target[-1] for d in disks if d.target.startswith(prefix)]
+    return prefix + [x for x in string.ascii_lowercase if x not in devs][0]  # noqa: RUF015
+
+
+def _manage_cdrom(session: Session, args: argparse.Namespace) -> None:
+    instance = session.get_instance(args.instance)
+    if args.detach:
+        for disk in instance.list_disks(persistent=True):
+            if disk.device == 'cdrom' and disk.source == args.source:
+                instance.detach_disk(disk.target, live=False)
+                print(
+                    f"disk '{disk.target}' detached, "
+                    'perform power reset to apply changes'
+                )
+        return
+    target = _get_disk_target(instance, 'hd')
+    cdrom = DiskConfig(
+        type='file',
+        device='cdrom',
+        source=args.source,
+        target=target,
+        is_readonly=True,
+        bus='ide',
+        driver=DiskDriver('qemu', 'raw', 'writethrough'),
+    )
+    instance.attach_device(cdrom, live=False)
+    print(
+        f"CDROM attached as disk '{target}', "
+        'perform power reset to apply changes'
+    )
+
+
 def main(session: Session, args: argparse.Namespace) -> None:
     """Perform actions."""
     match args.command:
         case 'init':
-            _create_instance(session, args.file)
+            _init_instance(session, args)
         case 'exec':
             _exec_guest_agent_command(session, args)
         case 'ls':
@@ -268,13 +341,17 @@ def main(session: Session, args: argparse.Namespace) -> None:
                 args.password,
                 encrypted=args.encrypted,
             )
+        case 'setcdrom':
+            _manage_cdrom(session, args)
+        case 'delete':
+            _delete_instance(session, args)
 
 
-def cli() -> None:  # noqa: PLR0915
+def get_parser() -> argparse.ArgumentParser:  # noqa: PLR0915
     """Return command line arguments parser."""
     root = argparse.ArgumentParser(
         prog='compute',
-        description='manage compute instances',
+        description='Manage compute instances.',
         formatter_class=argparse.RawTextHelpFormatter,
     )
     root.add_argument(
@@ -317,12 +394,27 @@ def cli() -> None:  # noqa: PLR0915
         default='instance.yaml',
         help='instance config [default: instance.yaml]',
     )
+    init.add_argument(
+        '-s',
+        '--start',
+        action='store_true',
+        default=False,
+        help='start instance after init',
+    )
+    init.add_argument(
+        '-t',
+        '--test',
+        action='store_true',
+        default=False,
+        help='just print resulting instance config as JSON and exit',
+    )
 
     # exec subcommand
     execute = subparsers.add_parser(
         'exec',
         help='execute command in guest via guest agent',
         description=(
+            'Execute command in guest via guest agent. '
             'NOTE: any argument after instance name will be passed into '
             'guest as shell command.'
         ),
@@ -463,27 +555,60 @@ def cli() -> None:  # noqa: PLR0915
         help='set it if password is already encrypted',
     )
 
+    # setcdrom subcommand
+    setcdrom = subparsers.add_parser('setcdrom', help='manage CDROM devices')
+    setcdrom.add_argument('instance')
+    setcdrom.add_argument('source', help='source for CDROM')
+    setcdrom.add_argument(
+        '-d',
+        '--detach',
+        action='store_true',
+        default=False,
+        help='detach CDROM device',
+    )
+
+    # delete subcommand
+    delete = subparsers.add_parser(
+        'delete',
+        help='delete instance',
+    )
+    delete.add_argument('instance')
+    delete.add_argument(
+        '-y',
+        '--yes',
+        action='store_true',
+        default=False,
+        help='automatic yes to prompt',
+    )
+    delete.add_argument(
+        '--save-volumes',
+        action='store_true',
+        default=False,
+        help='do not delete local storage volumes',
+    )
+
+    return root
+
+
+def cli() -> None:
+    """Run arguments parser."""
+    root = get_parser()
     args = root.parse_args()
     if args.command is None:
         root.print_help()
         sys.exit()
-
     log_level = args.log_level or os.getenv('CMP_LOG')
-
     if isinstance(log_level, str) and log_level.lower() in log_levels:
         logging.basicConfig(
             level=logging.getLevelNamesMapping()[log_level.upper()]
         )
-
     log.debug('CLI started with args: %s', args)
-
     connect_uri = (
         args.connect
         or os.getenv('CMP_LIBVIRT_URI')
         or os.getenv('LIBVIRT_DEFAULT_URI')
         or 'qemu:///system'
     )
-
     try:
         with Session(connect_uri) as session:
             main(session, args)
@@ -493,8 +618,6 @@ def cli() -> None:  # noqa: PLR0915
         sys.exit()
     except SystemExit as e:
         sys.exit(e)
-    except Exception as e:  # noqa: BLE001
-        sys.exit(f'unexpected error {type(e)}: {e}')
 
 
 if __name__ == '__main__':

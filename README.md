@@ -9,23 +9,23 @@ Run `make serve-docs`. See [Development](#development) below.
 ## Roadmap
 
 - [x] Create instances
-- [ ] CDROM
+- [x] CDROM
 - [ ] cloud-init for provisioning instances
-- [x] Instance power management
-- [x] Instance pause and resume
+- [x] Power management
+- [x] Pause and resume
 - [x] vCPU hotplug
 - [x] Memory hotplug
 - [x] Hot disk resize [not tested]
-- [ ] CPU topology customization
 - [x] CPU customization (emulation mode, model, vendor, features)
+- [ ] CPU topology customization
 - [ ] BIOS/UEFI settings
 - [x] Device attaching
 - [x] Device detaching
 - [ ] GPU passthrough
 - [ ] CPU guarantied resource percent support
 - [x] QEMU Guest Agent management
-- [ ] Instance resources usage stats
-- [ ] SSH-keys management
+- [ ] Resource usage stats
+- [x] SSH-keys management
 - [x] Setting user passwords in guest
 - [x] QCOW2 disks support
 - [ ] ZVOL support
@@ -35,10 +35,11 @@ Run `make serve-docs`. See [Development](#development) below.
 - [ ] Idempotency
 - [ ] CLI [in progress]
 - [ ] HTTP API
-- [ ] Instance migrations
-- [ ] Instance snapshots
-- [ ] Instance backups
+- [ ] Migrations
+- [ ] Snapshots
+- [ ] Backups
 - [ ] LXC
+- [ ] Attaching CDROM from sources: block, (http|https|ftp|ftps|tftp)://
 
 ## Development
 
@@ -78,6 +79,7 @@ After installation prepare environment, run following command to start libvirtd 
     virsh pool-define-as $pool dir - - - - "/$pool"
     virsh pool-build $pool
     virsh pool-start $pool
+    virsh pool-autostart $pool
 done
 ```
 

@@ -5,13 +5,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Compute instance related objects schemas."""
 
@@ -19,7 +19,8 @@ import re
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import validator
+from pydantic import ValidationError, validator
+from pydantic.error_wrappers import ErrorWrapper
 
 from compute.common import EntityModel
 from compute.utils.units import DataUnit
@@ -73,15 +74,26 @@ class VolumeCapacitySchema(EntityModel):
     unit: DataUnit
 
 
+class DiskDriverSchema(EntityModel):
+    """Virtual disk driver model."""
+
+    name: str
+    type: str  # noqa: A003
+    cache: str = 'writethrough'
+
+
 class VolumeSchema(EntityModel):
     """Storage volume model."""
 
     type: VolumeType  # noqa: A003
     target: str
-    capacity: VolumeCapacitySchema
+    driver: DiskDriverSchema
+    capacity: VolumeCapacitySchema | None
     source: str | None = None
     is_readonly: bool = False
     is_system: bool = False
+    bus: str = 'virtio'
+    device: str = 'disk'
 
 
 class NetworkInterfaceSchema(EntityModel):
@@ -118,10 +130,10 @@ class InstanceSchema(EntityModel):
 
     @validator('name')
     def _check_name(cls, value: str) -> str:  # noqa: N805
-        if not re.match(r'^[a-z0-9_]+$', value):
+        if not re.match(r'^[a-z0-9_-]+$', value):
             msg = (
-                'Name can contain only lowercase letters, numbers '
-                'and underscore.'
+                'Name can contain only lowercase letters, numbers, '
+                'minus sign and underscore.'
             )
             raise ValueError(msg)
         return value
@@ -140,13 +152,22 @@ class InstanceSchema(EntityModel):
         if len([v for v in volumes if v.is_system is True]) != 1:
             msg = 'volumes list must contain one system volume'
             raise ValueError(msg)
-        vol_with_source = 0
         for vol in volumes:
+            if vol.source is None and vol.capacity is None:
+                raise ValidationError(
+                    [
+                        ErrorWrapper(
+                            Exception(
+                                "capacity is required if 'source' is unset"
+                            ),
+                            loc='X.capacity',
+                        )
+                    ],
+                    model=VolumeSchema,
+                )
             if vol.is_system is True and vol.is_readonly is True:
                 msg = 'volume marked as system cannot be readonly'
                 raise ValueError(msg)
-            if vol.source is not None:
-                vol_with_source += 1
         return volumes
 
     @validator('network_interfaces')

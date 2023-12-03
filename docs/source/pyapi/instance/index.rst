@@ -7,4 +7,5 @@
 
     instance
     guest_agent
+    devices
     schemas

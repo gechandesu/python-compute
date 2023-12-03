@@ -14,6 +14,7 @@ RUN apt-get update; \
         python3-setuptools \
         python3-sphinx \
         python3-sphinx-multiversion \
+        python3-sphinx-argparse \
         python3-libvirt \
         python3-lxml \
         python3-yaml \

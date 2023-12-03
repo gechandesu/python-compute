@@ -5,13 +5,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Exceptions."""
 
@@ -80,9 +80,32 @@ class InstanceNotFoundError(InstanceError):
         super().__init__(f"compute instance '{msg}' not found")
 
 
+class InvalidDeviceConfigError(ComputeError):
+    """
+    Invalid device XML description.
+
+    :class:`DeviceCoonfig` instance cannot be created because
+    device config in libvirt XML config is not valid.
+    """
+
+    def __init__(self, msg: str, xml: str):
+        """Initialise InvalidDeviceConfigError."""
+        self.msg = f'Invalid device XML config: {msg}'
+        self.loc = f'    {xml}'
+        super().__init__(f'{self.msg}\n:{self.loc}')
+
+
 class InvalidDataUnitError(ValueError, ComputeError):
     """Data unit is not valid."""
 
     def __init__(self, msg: str, units: list):
         """Initialise InvalidDataUnitError."""
         super().__init__(f'{msg}, valid units are: {", ".join(units)}')
+
+
+class DictMergeConflictError(ComputeError):
+    """Conflict when merging dicts."""
+
+    def __init__(self, key: str):
+        """Initialise DictMergeConflictError."""
+        super().__init__(f'Conflicting key: {key}')

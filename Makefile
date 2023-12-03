@@ -10,13 +10,16 @@ all: docs build-deb
 requirements.txt:
 	poetry export -f requirements.txt -o requirements.txt
 
-build: format lint
-	awk '/^version/{print $$3}' pyproject.toml \
-		| xargs -I {} sed "s/__version__ =.*/__version__ = '{}'/" -i $(SRCDIR)/__init__.py
+build: version format lint
 	poetry build
 
 build-deb: build
 	cd packaging && $(MAKE)
+
+version:
+	VERSION=$$(awk '/^version/{print $$3}' pyproject.toml); \
+		sed "s/__version__ =.*/__version__ = $$VERSION/" -i $(SRCDIR)/__init__.py; \
+		sed "s/release =.*/release = $$VERSION/" -i $(DOCS_SRCDIR)/conf.py
 
 format:
 	poetry run isort $(SRCDIR)
@@ -32,7 +35,8 @@ docs-versions:
 	poetry run sphinx-multiversion $(DOCS_SRCDIR) $(DOCS_BUILDDIR)
 
 serve-docs:
-	poetry run sphinx-autobuild $(DOCS_SRCDIR) $(DOCS_BUILDDIR)
+	poetry run sphinx-autobuild $(DOCS_SRCDIR) $(DOCS_BUILDDIR) \
+		--pre-build 'make clean'
 
 clean:
 	[ -d $(DISTDIR) ] && rm -rf $(DISTDIR) || true
@@ -42,3 +46,7 @@ clean:
 
 test-build: build-deb
 	scp packaging/build/compute*.deb vm:~
+
+upload-docs: docs-versions
+	ssh root@hitomi 'rm -rf /srv/http/nixhacks.net/hstack/*'
+	scp -r $(DOCS_DUILDDIR) root@hitomi:/srv/http/nixhacks.net/hstack/

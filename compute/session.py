@@ -5,13 +5,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Hypervisor session manager."""
 
@@ -31,7 +31,8 @@ from .exceptions import (
     StoragePoolNotFoundError,
 )
 from .instance import Instance, InstanceConfig, InstanceSchema
-from .storage import DiskConfig, StoragePool, VolumeConfig
+from .instance.devices import DiskConfig, DiskDriver
+from .storage import StoragePool, VolumeConfig
 from .utils import units
 
 
@@ -164,7 +165,7 @@ class Session(AbstractContextManager):
             cpu_vendor=caps.xpath(f'{hprefix}/vendor/text()')[0],
             cpu_model=caps.xpath(f'{hprefix}/model/text()')[0],
             cpu_features=self._cap_get_cpu_features(caps),
-            usable_cpus=self._cap_get_cpus(caps),
+            usable_cpus=self._cap_get_usable_cpus(caps),
         )
 
     def create_instance(self, **kwargs: Any) -> Instance:
@@ -208,15 +209,15 @@ class Session(AbstractContextManager):
         config = InstanceConfig(data)
         log.info('Define XML...')
         log.info(config.to_xml())
-        self.connection.defineXML(config.to_xml())
+        try:
+            self.connection.defineXML(config.to_xml())
+        except libvirt.libvirtError as e:
+            raise SessionError(f'Error defining instance: {e}') from e
         log.info('Getting instance...')
         instance = self.get_instance(config.name)
-        log.info('Creating volumes...')
+        log.info('Start processing volumes...')
         for volume in data.volumes:
-            log.info('Creating volume=%s', volume)
-            capacity = units.to_bytes(
-                volume.capacity.value, volume.capacity.unit
-            )
+            log.info('Processing volume=%s', volume)
             log.info('Connecting to images pool...')
             images_pool = self.get_storage_pool(self.IMAGES_POOL)
             log.info('Connecting to volumes pool...')
@@ -226,35 +227,48 @@ class Session(AbstractContextManager):
                 vol_name = f'{uuid4()}.qcow2'
             else:
                 vol_name = volume.source
-            vol_conf = VolumeConfig(
-                name=vol_name,
-                path=str(volumes_pool.path.joinpath(vol_name)),
-                capacity=capacity,
-            )
-            log.info('Volume configuration is:\n %s', vol_conf.to_xml())
-            if volume.is_system is True and data.image:
-                log.info(
-                    "Volume is marked as 'system', start cloning image..."
-                )
-                log.info('Get image %s', data.image)
-                image = images_pool.get_volume(data.image)
-                log.info('Cloning image into volumes pool...')
-                vol = volumes_pool.clone_volume(image, vol_conf)
-                log.info(
-                    'Resize cloned volume to specified size: %s',
-                    capacity,
-                )
-                vol.resize(capacity, unit=units.DataUnit.BYTES)
+            if volume.device == 'cdrom':
+                log.debug('Volume %s is CDROM device', vol_name)
             else:
-                log.info('Create volume...')
-                volumes_pool.create_volume(vol_conf)
+                capacity = units.to_bytes(
+                    volume.capacity.value, volume.capacity.unit
+                )
+                vol_conf = VolumeConfig(
+                    name=vol_name,
+                    path=str(volumes_pool.path.joinpath(vol_name)),
+                    capacity=capacity,
+                )
+                log.info('Volume configuration is:\n %s', vol_conf.to_xml())
+                if volume.is_system is True and data.image:
+                    log.info(
+                        "Volume is marked as 'system', start cloning image..."
+                    )
+                    log.info('Get image %s', data.image)
+                    image = images_pool.get_volume(data.image)
+                    log.info('Cloning image into volumes pool...')
+                    vol = volumes_pool.clone_volume(image, vol_conf)
+                    log.info(
+                        'Resize cloned volume to specified size: %s',
+                        capacity,
+                    )
+                    vol.resize(capacity, unit=units.DataUnit.BYTES)
+                else:
+                    log.info('Create volume...')
+                    volumes_pool.create_volume(vol_conf)
             log.info('Attaching volume to instance...')
             instance.attach_device(
                 DiskConfig(
-                    disk_type=volume.type,
+                    type=volume.type,
+                    device=volume.device,
                     source=vol_conf.path,
                     target=volume.target,
-                    readonly=volume.is_readonly,
+                    is_readonly=volume.is_readonly,
+                    bus=volume.bus,
+                    driver=DiskDriver(
+                        volume.driver.name,
+                        volume.driver.type,
+                        volume.driver.cache,
+                    ),
                 )
             )
         return instance

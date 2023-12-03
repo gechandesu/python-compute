@@ -5,13 +5,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Tools for data units convertion."""
 
@@ -21,13 +21,20 @@ from compute.exceptions import InvalidDataUnitError
 
 
 class DataUnit(StrEnum):
-    """Data units enumerated."""
+    """Data units enumeration."""
 
     BYTES = 'bytes'
     KIB = 'KiB'
     MIB = 'MiB'
     GIB = 'GiB'
     TIB = 'TiB'
+
+    @classmethod
+    def _missing_(cls, name: str) -> 'DataUnit':
+        for member in cls:
+            if member.name.lower() == name.lower():
+                return member
+        return None
 
 
 def to_bytes(value: int, unit: DataUnit = DataUnit.BYTES) -> int:

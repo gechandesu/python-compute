@@ -5,26 +5,25 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Manage storage volumes."""
 
 from dataclasses import dataclass
 from pathlib import Path
 from time import time
-from typing import Union
 
 import libvirt
 from lxml import etree
 from lxml.builder import E
 
-from compute.common import DeviceConfig, EntityConfig
+from compute.common import EntityConfig
 from compute.utils import units
 
 
@@ -62,54 +61,6 @@ class VolumeConfig(EntityConfig):
             )
         )
         return etree.tostring(xml, encoding='unicode', pretty_print=True)
-
-
-@dataclass
-class DiskConfig(DeviceConfig):
-    """
-    Disk XML config builder.
-
-    Generate XML config for attaching or detaching storage volumes
-    to compute instances.
-    """
-
-    disk_type: str
-    source: str | Path
-    target: str
-    readonly: bool = False
-
-    def to_xml(self) -> str:
-        """Return XML config for libvirt."""
-        xml = E.disk(type=self.disk_type, device='disk')
-        xml.append(E.driver(name='qemu', type='qcow2', cache='writethrough'))
-        if self.disk_type == 'file':
-            xml.append(E.source(file=str(self.source)))
-        xml.append(E.target(dev=self.target, bus='virtio'))
-        if self.readonly:
-            xml.append(E.readonly())
-        return etree.tostring(xml, encoding='unicode', pretty_print=True)
-
-    @classmethod
-    def from_xml(cls, xml: Union[str, etree.Element]) -> 'DiskConfig':  # noqa: UP007
-        """
-        Return :class:`DiskConfig` instance using existing XML config.
-
-        :param xml: Disk device XML configuration as :class:`str` or lxml
-            :class:`etree.Element` object.
-        """
-        if isinstance(xml, str):
-            xml = etree.fromstring(xml)
-        disk_params = {
-            'disk_type': xml.get('type'),
-            'source': xml.find('source').get('file'),
-            'target': xml.find('target').get('dev'),
-            'readonly': False if xml.find('readonly') is None else True,  # noqa: SIM211
-        }
-        for param in disk_params:
-            if disk_params[param] is None:
-                msg = f"Bad XML config: parameter '{param}' is not defined"
-                raise ValueError(msg)
-        return cls(**disk_params)
 
 
 class Volume:

@@ -18,8 +18,10 @@ _compute_root_cmd="
     status
     setvcpus
     setmem
-    setpass"
-_compute_init_opts=""
+    setpass
+    setcdrom
+    delete"
+_compute_init_opts="--test --start"
 _compute_exec_opts="--timeout --executable --env --no-join-args"
 _compute_ls_opts=""
 _compute_start_opts=""
@@ -33,6 +35,8 @@ _compute_status_opts=""
 _compute_setvcpus_opts=""
 _compute_setmem_opts=""
 _compute_setpass_opts="--encrypted"
+_compute_setcdrom_opts="--detach"
+_compute_delete_opts="--yes --save-volumes"
 
 _compute_complete_instances()
 {
@@ -78,6 +82,8 @@ _compute_complete()
                 setvcpus) _compute_compreply "$_compute_setvcpus_opts";;
                 setmem) _compute_compreply "$_compute_setmem_opts";;
                 setpass) _compute_compreply "$_compute_setpass_opts";;
+                setcdrom) _compute_compreply "$_compute_setcdrom_opts";;
+                delete) _compute_compreply "$_compute_delete_opts";;
                 *) COMPREPLY=()
             esac
             ;;

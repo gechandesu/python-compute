@@ -5,19 +5,20 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Ansible is distributed in the hope that it will be useful,
+# Compute is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+# along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
 """Manage compute instances."""
 
 __all__ = ['Instance', 'InstanceConfig', 'InstanceInfo']
 
 import logging
+import time
 from typing import NamedTuple
 
 import libvirt
@@ -29,9 +30,9 @@ from compute.exceptions import (
     GuestAgentCommandNotSupportedError,
     InstanceError,
 )
-from compute.storage import DiskConfig
 from compute.utils import units
 
+from .devices import DiskConfig
 from .guest_agent import GuestAgent
 from .schemas import (
     CPUEmulationMode,
@@ -282,7 +283,7 @@ class Instance:
 
     def start(self) -> None:
         """Start defined instance."""
-        log.info('Starting instnce=%s', self.name)
+        log.info("Starting instance '%s'", self.name)
         if self.is_running():
             log.warning(
                 'Already started, nothing to do instance=%s', self.name
@@ -292,7 +293,7 @@ class Instance:
             self.domain.create()
         except libvirt.libvirtError as e:
             raise InstanceError(
-                f'Cannot start instance={self.name}: {e}'
+                f"Cannot start instance '{self.name}': {e}"
             ) from e
 
     def shutdown(self, method: str | None = None) -> None:
@@ -323,6 +324,7 @@ class Instance:
         :param method: Method used to shutdown instance
         """
         if not self.is_running():
+            log.warning('Instance is not running, nothing to do')
             return
         methods = {
             'SOFT': libvirt.VIR_DOMAIN_SHUTDOWN_GUEST_AGENT,
@@ -339,6 +341,7 @@ class Instance:
         method = method.upper()
         if method not in methods:
             raise ValueError(f"Unsupported shutdown method: '{method}'")
+        log.info("Performing instance shutdown with method '%s'", method)
         try:
             if method in ['SOFT', 'NORMAL']:
                 self.domain.shutdownFlags(flags=methods[method])
@@ -346,7 +349,7 @@ class Instance:
                 self.domain.destroyFlags(flags=methods[method])
         except libvirt.libvirtError as e:
             raise InstanceError(
-                f'Cannot shutdown instance={self.name} ' f'{method=}: {e}'
+                f"Cannot shutdown instance '{self.name}' with '{method=}': {e}"
             ) from e
 
     def reboot(self) -> None:
@@ -375,7 +378,7 @@ class Instance:
             self.domain.reset()
         except libvirt.libvirtError as e:
             raise InstanceError(
-                f'Cannot reset instance={self.name}: {e}'
+                f"Cannot reset instance '{self.name}': {e}"
             ) from e
 
     def power_reset(self) -> None:
@@ -389,7 +392,13 @@ class Instance:
         configuration change in libvirt and you need to restart the
         instance to apply the new configuration.
         """
-        self.shutdown(method='NORMAL')
+        log.debug("Performing power reset for instance '%s'", self.name)
+        self.shutdown('NORMAL')
+        time.sleep(3)
+        # TODO @ge: do safe shutdown insted of this shit
+        if self.is_running():
+            self.shutdown('HARD')
+        time.sleep(1)
         self.start()
 
     def set_autostart(self, *, enabled: bool) -> None:
@@ -550,7 +559,9 @@ class Instance:
                 return
         self.domain.detachDeviceFlags(device.to_xml(), flags=flags)
 
-    def get_disk(self, name: str) -> DiskConfig | None:
+    def get_disk(
+        self, name: str, *, persistent: bool = False
+    ) -> DiskConfig | None:
         """
         Return :class:`DiskConfig` by disk target name.
 
@@ -558,20 +569,27 @@ class Instance:
 
         :param name: Disk name e.g. `vda`, `sda`, etc. This name may
             not match the name of the disk inside the guest OS.
+        :param persistent: If True get only persistent volumes described
+            in instance XML config.
         """
-        xml = etree.fromstring(self.dump_xml())
+        xml = etree.fromstring(self.dump_xml(inactive=persistent))
         child = xml.xpath(f'/domain/devices/disk/target[@dev="{name}"]')
         if len(child) == 0:
             return None
         return DiskConfig.from_xml(child[0].getparent())
 
-    def list_disks(self) -> list[DiskConfig]:
-        """Return list of attached disk devices."""
-        xml = etree.fromstring(self.dump_xml())
+    def list_disks(self, *, persistent: bool = False) -> list[DiskConfig]:
+        """
+        Return list of attached disk devices.
+
+        :param persistent: If True list only persistent volumes described
+            in instance XML config.
+        """
+        xml = etree.fromstring(self.dump_xml(inactive=persistent))
         disks = xml.xpath('/domain/devices/disk')
         return [DiskConfig.from_xml(disk) for disk in disks]
 
-    def detach_disk(self, name: str) -> None:
+    def detach_disk(self, name: str, *, live: bool = False) -> None:
         """
         Detach disk device by target name.
 
@@ -580,15 +598,17 @@ class Instance:
 
         :param name: Disk name e.g. `vda`, `sda`, etc. This name may
             not match the name of the disk inside the guest OS.
+        :param live: Affect a running instance. Not supported for CDROM
+            devices.
         """
-        disk = self.get_disk(name)
+        disk = self.get_disk(name, persistent=live)
         if disk is None:
             log.warning(
                 "Volume with target '%s' is already detached",
                 name,
             )
             return
-        self.detach_device(disk, live=True)
+        self.detach_device(disk, live=live)
 
     def resize_disk(
         self, name: str, capacity: int, unit: units.DataUnit
@@ -601,6 +621,7 @@ class Instance:
         :param capacity: New capacity.
         :param unit: Capacity unit.
         """
+        # TODO @ge: check actual size before making changes
         self.domain.blockResize(
             name,
             units.to_bytes(capacity, unit=unit),
@@ -619,7 +640,7 @@ class Instance:
 
     def list_ssh_keys(self, user: str) -> list[str]:
         """
-        Return list of SSH keys on guest for specific user.
+        Return list of authorized SSH keys in guest for specific user.
 
         :param user: Username.
         """
@@ -655,7 +676,7 @@ class Instance:
         append: bool = False,
     ) -> None:
         """
-        Add SSH keys to guest for specific user.
+        Add authorized SSH keys to guest for specific user.
 
         :param user: Username.
         :param keys: List of authorized SSH keys.
@@ -666,7 +687,7 @@ class Instance:
         qemu_ga_commands = ['guest-ssh-add-authorized-keys']
         if remove and append:
             raise InstanceError(
-                "'append' and 'remove' parameters is mutually exclusive"
+                "'append' and 'remove' parameters are mutually exclusive"
             )
         if not self.is_running():
             raise InstanceError(
@@ -693,7 +714,7 @@ class Instance:
         """
         Set new user password in guest OS.
 
-        This action performs by guest agent inside the guest.
+        This action is performed by guest agent inside the guest.
 
         :param user: Username.
         :param password: Password.
@@ -702,6 +723,7 @@ class Instance:
         """
         self.guest_agent.raise_for_commands(['guest-set-user-password'])
         flags = libvirt.VIR_DOMAIN_PASSWORD_ENCRYPTED if encrypted else 0
+        log.debug("Setting up password for user '%s'", user)
         self.domain.setUserPassword(user, password, flags=flags)
 
     def dump_xml(self, *, inactive: bool = False) -> str:
@@ -709,11 +731,19 @@ class Instance:
         flags = libvirt.VIR_DOMAIN_XML_INACTIVE if inactive else 0
         return self.domain.XMLDesc(flags)
 
-    def delete(self) -> None:
-        """Delete instance with local disks."""
+    def delete(self, *, with_volumes: bool = False) -> None:
+        """
+        Delete instance with local volumes.
+
+        :param with_volumes: If True delete local volumes with instance.
+        """
         self.shutdown(method='HARD')
-        for disk in self.list_disks():
-            if disk.disk_type == 'file':
+        disks = self.list_disks(persistent=True)
+        log.debug('Disks list: %s', disks)
+        for disk in disks:
+            if with_volumes and disk.type == 'file':
                 volume = self.connection.storageVolLookupByPath(disk.source)
+                log.debug('Delete volume: %s', volume.path())
                 volume.delete()
+        log.debug('Undefine instance')
         self.domain.undefine()
