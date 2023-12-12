@@ -5,7 +5,7 @@ description = 'Compute instances management library'
 license = 'GPL-3.0-or-later'
 authors = ['ge <ge@nixhacks.net>']
 readme = 'README.md'
-include = ['computed.toml']
+include = ['computed.toml', 'instance.full.yaml']
 
 [tool.poetry.dependencies]
 python = '^3.11'

@@ -1,0 +1,160 @@
+# Instance name. This name is used as ID and must contain only lowercase
+# letters, numbers, minus sign and underscore. If name is not set random UUID
+# will used as name.
+name: myinstance
+# Title is optional human readable title.
+title: my_title
+# Optional instance description
+description: Take instance description here
+# Number of vCPUs.
+vcpus: 2
+# The maximum number of vCPUs to which you can scale without restarting the
+# instance. By default equals to number of threads on host.
+max_vcpus: 4
+# Memory size in MiB (mebibytes: value in power of 1024).
+memory: 2048
+# The maximum amount of memory in MiB (mebibytes) to which you can scale
+# without restarting the instance. By default equals to host memory size.
+max_memory: 4096
+# Emulated CPU settings
+cpu:
+  # CPU emulation mode. Can be one of:
+  # - host-passthrough (default) -- passthrough host processor
+  # - host-model
+  # - custom
+  # - maximum
+  # See Libvirt docs for more info:
+  # https://libvirt.org/formatdomain.html#cpu-model-and-topology
+  emulation_mode: custom
+  # CPU vendor and model
+  # See usable CPUs supported by hypervisor run Python script with contents:
+  #
+  #   import compute
+  #   with compute.Session() as s:
+  #       for cpu in s.get_capabilities().usable_cpus:
+  #           print(cpu)
+  #
+  # Also see https://www.qemu.org/docs/master/system/i386/cpu.html
+  vendor: Intel
+  model: Snowridge
+  # CPU features. Refer to QEMU documentation and host capabilities.
+  # Python script to get available features for CPU in 'host-model' mode:
+  #
+  #   import compute
+  #   with compute.Session() as s:
+  #       features = s.get_capabilities().cpu_features
+  #       print('require:')
+  #       for feat in features['require']:
+  #           print(f'  - {feat}')
+  #       print('disable:')
+  #       for feat in features['disable']:
+  #           print(f'  - {feat}')
+  features:
+    require:
+      - ss
+      - vmx
+      - fma
+      - avx
+      - f16c
+      - hypervisor
+      - tsc_adjust
+      - bmi1
+      - avx2
+      - bmi2
+      - invpcid
+      - adx
+      - pku
+      - vaes
+      - vpclmulqdq
+      - rdpid
+      - fsrm
+      - md-clear
+      - serialize
+      - stibp
+      - avx-vnni
+      - xsaves
+      - abm
+      - ibpb
+      - amd-stibp
+      - amd-ssbd
+      - rdctl-no
+      - ibrs-all
+      - skip-l1dfl-vmentry
+      - mds-no
+      - pschange-mc-no
+    disable:
+      - mpx
+      - cldemote
+      - core-capability
+      - split-lock-detect
+  # CPU topology
+  # The product of the values of all parameters must equal the maximum number
+  # of vcpu:
+  #   sockets * dies * cores * threads = max_vcpus
+  # dies is optional and equals 1 by default.
+  #
+  # If you need a complex topology, you will have to sacrifice the ability to
+  # hotplug vCPUS. You will need to set 'max_vcpus' to equal 'vcpus'. To apply
+  # the changes you will need to perform a power reset or manually shutdown
+  # and start instance (not reboot or reset).
+  #
+  # By default, the number of sockets will be set to the number of vCPUS. You
+  # may want to use a single socket without sacrificing the vCPUS hotplug, so
+  # you can set the following values:
+  #
+  #   topology:
+  #     sockets: 1
+  #     cores: 4
+  #     threads: 1
+  #
+  # Note that the value of 'cores' must be equal to 'max_vcpus'.
+  topology:
+    sockets: 1
+    dies: 1
+    cores: 2
+    threads: 1
+# QEMU emulated machine
+machine: pc-i440fx-8.1
+# Path to emulator on host
+emulator: /usr/bin/qemu-system-x86_64
+# Emulated platform arch
+arch: x86_64
+# Machine boot setting
+boot:
+  # Disks boot order. Boot from CDROM first.
+  order:
+    - cdrom
+    - hd
+# Network configuration. This decision is temporary and will be changed in
+# the future. We recommend not using this option.
+network_interfaces:
+  - mac: 00:16:3e:7e:8c:4a
+    source: default
+# Disk image
+image: /images/debian-12-generic-amd64.qcow2
+# Storage volumes list
+volumes:
+  - type: file
+    device: disk
+    bus: virtio
+    # Disk target name. This name is used only for the hypervisor and may not be
+    # the same as the drive name in the guest operating system.
+    targer: vda
+    # 'source' may used for connect existing volumes. In this example it is
+    # improper.
+    #source: /images/debian-12-generic-amd64.qcow2
+    capacity:
+      value: 10
+      unit: GiB
+    # Make volume read only.
+    is_readonly: false
+    # Mark the disk as system disk. This label is needed for use in conjunction
+    # with the image parameter. The contents of the disk specified in image will
+    # be copied to this volume.
+    is_system: true
+# Cloud-init configuration. See `cli/cloud_init.rst` file for more info.
+cloud_init:
+  user_data: null
+  meta_data: null
+  vendor_data: null
+  network_config: null
