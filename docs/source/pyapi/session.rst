@@ -1,6 +1,5 @@
-``session``
-===========
+``session`` — Hypervisor session manager
+========================================
 
 .. automodule:: compute.session
    :members:
-   :special-members: __init__

@@ -49,4 +49,4 @@ test-build: build-deb
 
 upload-docs: docs-versions
 	ssh root@hitomi 'rm -rf /srv/http/nixhacks.net/hstack/*'
-	scp -r $(DOCS_DUILDDIR) root@hitomi:/srv/http/nixhacks.net/hstack/
+	scp -r $(DOCS_BUILDDIR)/* root@hitomi:/srv/http/nixhacks.net/hstack/

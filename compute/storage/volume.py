@@ -23,7 +23,7 @@ import libvirt
 from lxml import etree
 from lxml.builder import E
 
-from compute.common import EntityConfig
+from compute.abstract import EntityConfig
 from compute.utils import units
 
 

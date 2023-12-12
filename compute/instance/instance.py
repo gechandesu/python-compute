@@ -25,7 +25,7 @@ import libvirt
 from lxml import etree
 from lxml.builder import E
 
-from compute.common import DeviceConfig, EntityConfig
+from compute.abstract import DeviceConfig, EntityConfig
 from compute.exceptions import (
     GuestAgentCommandNotSupportedError,
     InstanceError,
@@ -141,6 +141,14 @@ class InstanceConfig(EntityConfig):
             )
         )
         xml.append(self._gen_cpu_xml(self.cpu))
+        xml.append(
+            E.clock(
+                E.timer(name='rtc', tickpolicy='catchup'),
+                E.timer(name='pit', tickpolicy='delay'),
+                E.timer(name='hpet', present='no'),
+                offset='utc',
+            )
+        )
         os = E.os(E.type('hvm', machine=self.machine, arch=self.arch))
         for dev in self.boot.order:
             os.append(E.boot(dev=dev))
@@ -159,7 +167,7 @@ class InstanceConfig(EntityConfig):
         devices.append(E.emulator(str(self.emulator)))
         for interface in self.network_interfaces:
             devices.append(self._gen_network_interface_xml(interface))
-        devices.append(E.graphics(type='vnc', port='-1', autoport='yes'))
+        devices.append(E.graphics(type='vnc', autoport='yes'))
         devices.append(E.input(type='tablet', bus='usb'))
         devices.append(
             E.channel(
@@ -171,6 +179,7 @@ class InstanceConfig(EntityConfig):
                 type='unix',
             )
         )
+        devices.append(E.serial(E.target(port='0'), type='pty'))
         devices.append(
             E.console(E.target(type='serial', port='0'), type='pty')
         )
@@ -212,10 +221,30 @@ class Instance:
 
         :param domain: libvirt domain object
         """
-        self.domain = domain
-        self.connection = domain.connect()
-        self.name = domain.name()
-        self.guest_agent = GuestAgent(domain)
+        self._domain = domain
+        self._connection = domain.connect()
+        self._name = domain.name()
+        self._guest_agent = GuestAgent(domain)
+
+    @property
+    def connection(self) -> libvirt.virConnect:
+        """Libvirt connection object."""
+        return self._connection
+
+    @property
+    def domain(self) -> libvirt.virDomain:
+        """Libvirt domain object."""
+        return self._domain
+
+    @property
+    def name(self) -> str:
+        """Instance name."""
+        return self._name
+
+    @property
+    def guest_agent(self) -> GuestAgent:
+        """:class:`GuestAgent` object."""
+        return self._guest_agent
 
     def _expand_instance_state(self, state: int) -> str:
         states = {
@@ -279,6 +308,9 @@ class Instance:
 
     def get_max_vcpus(self) -> int:
         """Maximum vCPUs number for domain."""
+        if not self.is_running():
+            xml = etree.fromstring(self.dump_xml(inactive=True))
+            return int(xml.xpath('/domain/vcpu/text()')[0])
         return self.domain.maxVcpus()
 
     def start(self) -> None:
@@ -324,7 +356,6 @@ class Instance:
         :param method: Method used to shutdown instance
         """
         if not self.is_running():
-            log.warning('Instance is not running, nothing to do')
             return
         methods = {
             'SOFT': libvirt.VIR_DOMAIN_SHUTDOWN_GUEST_AGENT,
@@ -737,13 +768,24 @@ class Instance:
 
         :param with_volumes: If True delete local volumes with instance.
         """
+        log.info("Shutdown instance '%s'", self.name)
         self.shutdown(method='HARD')
         disks = self.list_disks(persistent=True)
         log.debug('Disks list: %s', disks)
         for disk in disks:
             if with_volumes and disk.type == 'file':
-                volume = self.connection.storageVolLookupByPath(disk.source)
-                log.debug('Delete volume: %s', volume.path())
+                try:
+                    volume = self.connection.storageVolLookupByPath(
+                        disk.source
+                    )
+                except libvirt.libvirtError as e:
+                    if e.get_error_code() == libvirt.VIR_ERR_NO_STORAGE_VOL:
+                        log.warning(
+                            "Volume '%s' not found, skipped",
+                            disk.source,
+                        )
+                    continue
+                log.info('Delete volume: %s', volume.path())
                 volume.delete()
-        log.debug('Undefine instance')
+        log.info('Undefine instance')
         self.domain.undefine()

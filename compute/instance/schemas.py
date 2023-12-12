@@ -22,7 +22,7 @@ from pathlib import Path
 from pydantic import ValidationError, validator
 from pydantic.error_wrappers import ErrorWrapper
 
-from compute.common import EntityModel
+from compute.abstract import EntityModel
 from compute.utils.units import DataUnit
 
 
@@ -109,6 +109,15 @@ class BootOptionsSchema(EntityModel):
     order: tuple
 
 
+class CloudInitSchema(EntityModel):
+    """Cloud-init config model."""
+
+    user_data: str | None = None
+    meta_data: str | None = None
+    vendor_data: str | None = None
+    network_config: str | None = None
+
+
 class InstanceSchema(EntityModel):
     """Compute instance model."""
 
@@ -127,6 +136,7 @@ class InstanceSchema(EntityModel):
     volumes: list[VolumeSchema]
     network_interfaces: list[NetworkInterfaceSchema]
     image: str | None = None
+    cloud_init: CloudInitSchema | None = None
 
     @validator('name')
     def _check_name(cls, value: str) -> str:  # noqa: N805

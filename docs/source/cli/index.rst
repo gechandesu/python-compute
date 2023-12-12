@@ -2,7 +2,9 @@ CLI
 ===
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 3
 
-    usage
+    getting_started
+    cloud_init
+    instance_file
     reference

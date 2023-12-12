@@ -1,6 +1,7 @@
 dist/
 docs/build/
 packaging/build/
+instance.yaml
 .ruff_cache/
 __pycache__/
 *.pyc

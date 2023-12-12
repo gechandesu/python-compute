@@ -16,7 +16,6 @@
 """Hypervisor session manager."""
 
 import logging
-import os
 from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import Any, NamedTuple
@@ -25,18 +24,22 @@ from uuid import uuid4
 import libvirt
 from lxml import etree
 
+from .config import Config
 from .exceptions import (
     InstanceNotFoundError,
     SessionError,
     StoragePoolNotFoundError,
 )
 from .instance import Instance, InstanceConfig, InstanceSchema
+from .instance.cloud_init import CloudInit
 from .instance.devices import DiskConfig, DiskDriver
 from .storage import StoragePool, VolumeConfig
-from .utils import units
+from .utils import diskutils, units
 
 
 log = logging.getLogger(__name__)
+
+config = Config()
 
 
 class Capabilities(NamedTuple):
@@ -72,27 +75,20 @@ class NodeInfo(NamedTuple):
 
 
 class Session(AbstractContextManager):
-    """
-    Hypervisor session context manager.
-
-    :cvar IMAGES_POOL: images storage pool name taken from env
-    :cvar VOLUMES_POOL: volumes storage pool name taken from env
-    """
-
-    IMAGES_POOL = os.getenv('CMP_IMAGES_POOL')
-    VOLUMES_POOL = os.getenv('CMP_VOLUMES_POOL')
+    """Hypervisor session context manager."""
 
     def __init__(self, uri: str | None = None):
         """
         Initialise session with hypervisor.
 
-        :ivar str uri: libvirt connection URI.
-        :ivar libvirt.virConnect connection: libvirt connection object.
-
         :param uri: libvirt connection URI.
         """
-        self.uri = uri or 'qemu:///system'
-        self.connection = libvirt.open(self.uri)
+        log.debug('Config=%s', config)
+        self.LIBVIRT_URI = config['libvirt']['uri']
+        self.IMAGES_POOL = config['storage']['images']
+        self.VOLUMES_POOL = config['storage']['volumes']
+        self._uri = uri or self.LIBVIRT_URI
+        self._connection = libvirt.open(self._uri)
 
     def __enter__(self):
         """Return Session object."""
@@ -106,6 +102,16 @@ class Session(AbstractContextManager):
     ):
         """Close the connection when leaving the context."""
         self.close()
+
+    @property
+    def uri(self) -> str:
+        """Libvirt connection URI."""
+        return self._uri
+
+    @property
+    def connection(self) -> libvirt.virConnect:
+        """Libvirt connection object."""
+        return self._connection
 
     def close(self) -> None:
         """Close connection to libvirt daemon."""
@@ -207,38 +213,51 @@ class Session(AbstractContextManager):
         """
         data = InstanceSchema(**kwargs)
         config = InstanceConfig(data)
-        log.info('Define XML...')
-        log.info(config.to_xml())
+        log.info('Define instance XML')
+        log.debug(config.to_xml())
         try:
             self.connection.defineXML(config.to_xml())
         except libvirt.libvirtError as e:
             raise SessionError(f'Error defining instance: {e}') from e
-        log.info('Getting instance...')
+        log.info('Getting instance object...')
         instance = self.get_instance(config.name)
         log.info('Start processing volumes...')
+        log.info('Connecting to images pool...')
+        images_pool = self.get_storage_pool(self.IMAGES_POOL)
+        images_pool.refresh()
+        log.info('Connecting to volumes pool...')
+        volumes_pool = self.get_storage_pool(self.VOLUMES_POOL)
+        volumes_pool.refresh()
+        disk_targets = []
         for volume in data.volumes:
             log.info('Processing volume=%s', volume)
-            log.info('Connecting to images pool...')
-            images_pool = self.get_storage_pool(self.IMAGES_POOL)
-            log.info('Connecting to volumes pool...')
-            volumes_pool = self.get_storage_pool(self.VOLUMES_POOL)
             log.info('Building volume configuration...')
+            capacity = None
+            disk_targets.append(volume.target)
             if not volume.source:
-                vol_name = f'{uuid4()}.qcow2'
+                volume_name = f'{uuid4()}.qcow2'
             else:
-                vol_name = volume.source
+                volume_name = volume.source
             if volume.device == 'cdrom':
-                log.debug('Volume %s is CDROM device', vol_name)
+                log.info('Volume %s is CDROM device', volume_name)
+            elif volume.source is not None:
+                log.info('Using volume %s as source', volume_name)
+                volume_source = volume.source
+                if volume.capacity:
+                    capacity = units.to_bytes(
+                        volume.capacity.value, volume.capacity.unit
+                    )
             else:
                 capacity = units.to_bytes(
                     volume.capacity.value, volume.capacity.unit
                 )
-                vol_conf = VolumeConfig(
-                    name=vol_name,
-                    path=str(volumes_pool.path.joinpath(vol_name)),
+                volume_config = VolumeConfig(
+                    name=volume_name,
+                    path=str(volumes_pool.path.joinpath(volume_name)),
                     capacity=capacity,
                 )
-                log.info('Volume configuration is:\n %s', vol_conf.to_xml())
+                volume_source = volume_config.path
+                log.debug('Volume config: %s', volume_config)
                 if volume.is_system is True and data.image:
                     log.info(
                         "Volume is marked as 'system', start cloning image..."
@@ -246,21 +265,22 @@ class Session(AbstractContextManager):
                     log.info('Get image %s', data.image)
                     image = images_pool.get_volume(data.image)
                     log.info('Cloning image into volumes pool...')
-                    vol = volumes_pool.clone_volume(image, vol_conf)
-                    log.info(
-                        'Resize cloned volume to specified size: %s',
-                        capacity,
-                    )
-                    vol.resize(capacity, unit=units.DataUnit.BYTES)
+                    vol = volumes_pool.clone_volume(image, volume_config)
                 else:
-                    log.info('Create volume...')
-                    volumes_pool.create_volume(vol_conf)
+                    log.info('Create volume %s', volume_config.name)
+                    volumes_pool.create_volume(volume_config)
+            if capacity is not None:
+                log.info(
+                    'Resize cloned volume to specified size: %s',
+                    capacity,
+                )
+                vol.resize(capacity, unit=units.DataUnit.BYTES)
             log.info('Attaching volume to instance...')
             instance.attach_device(
                 DiskConfig(
                     type=volume.type,
                     device=volume.device,
-                    source=vol_conf.path,
+                    source=volume_source,
                     target=volume.target,
                     is_readonly=volume.is_readonly,
                     bus=volume.bus,
@@ -270,6 +290,24 @@ class Session(AbstractContextManager):
                         volume.driver.cache,
                     ),
                 )
+            )
+        if data.cloud_init:
+            log.info('Crating disk for cloud-init...')
+            cloud_init = CloudInit()
+            cloud_init.user_data = data.cloud_init.user_data
+            cloud_init.vendor_data = data.cloud_init.vendor_data
+            cloud_init.network_config = data.cloud_init.network_config
+            cloud_init.meta_data = data.cloud_init.meta_data
+            cloud_init_disk_path = volumes_pool.path.joinpath(
+                f'{instance.name}-cloud-init.img'
+            )
+            cloud_init.create_disk(cloud_init_disk_path)
+            log.info('Attaching cloud-init disk to instance...')
+            volumes_pool.refresh()
+            cloud_init.attach_disk(
+                cloud_init_disk_path,
+                diskutils.get_disk_target(disk_targets, prefix='vd'),
+                instance,
             )
         return instance
 

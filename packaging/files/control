@@ -33,12 +33,14 @@ Depends:
  python3-libvirt,
  python3-lxml,
  python3-yaml,
- python3-pydantic
+ python3-pydantic,
+ mtools,
+ dosfstools
 Recommends:
  dnsmasq
 Suggests:
  compute-doc
-Description: Compute instances management library and tools (Python 3)
+Description: Compute instances management library (Python 3)
 
 Package: compute-doc
 Section: doc
@@ -46,4 +48,4 @@ Architecture: all
 Depends:
  ${sphinxdoc:Depends},
  ${misc:Depends},
-Description: Compute instances management library and tools (documentation)
+Description: Compute instances management library (documentation)

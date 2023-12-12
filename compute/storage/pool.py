@@ -15,7 +15,11 @@
 
 """Manage storage pools."""
 
+import datetime
 import logging
+import time
+from datetime import datetime as dt
+from datetime import timedelta
 from pathlib import Path
 from typing import NamedTuple
 
@@ -65,10 +69,32 @@ class StoragePool:
         """Return storage pool XML description as string."""
         return self.pool.XMLDesc()
 
-    def refresh(self) -> None:
-        """Refresh storage pool."""
-        # TODO @ge: handle libvirt asynchronous job related exceptions
-        self.pool.refresh()
+    def refresh(self, *, retry: bool = True, timeout: int = 30) -> None:
+        """
+        Refresh storage pool.
+
+        :param retry: If True retry pool refresh on :class:`libvirtError`
+            with running asynchronous jobs.
+        :param timeout: Retry timeout in secodns. Affets only if `retry`
+            is True.
+        """
+        retry_timeout = dt.now(tz=datetime.UTC) + timedelta(seconds=timeout)
+        while dt.now(tz=datetime.UTC) < retry_timeout:
+            try:
+                self.pool.refresh()
+            except libvirt.libvirtError as e:
+                if 'asynchronous jobs running' in e.get_error_message():
+                    if retry is False:
+                        raise StoragePoolError(e) from e
+                    log.debug(
+                        'An error ocurred when refreshing storage pool '
+                        'retrying after 1 sec...'
+                    )
+                    time.sleep(1)
+                else:
+                    raise StoragePoolError(e) from e
+            else:
+                return
 
     def create_volume(self, vol_conf: VolumeConfig) -> Volume:
         """Create storage volume and return Volume instance."""

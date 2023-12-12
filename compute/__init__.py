@@ -15,8 +15,9 @@
 
 """Compute instances management library."""
 
-__version__ = '0.1.0-dev2'
+__version__ = '0.1.0-dev3'
 
-from .instance import Instance, InstanceConfig, InstanceSchema
+from .config import Config
+from .instance import CloudInit, Instance, InstanceConfig, InstanceSchema
 from .session import Session
 from .storage import StoragePool, Volume, VolumeConfig

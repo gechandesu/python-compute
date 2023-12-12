@@ -15,7 +15,7 @@
 
 """Command line interface for compute module."""
 
-from compute.cli import control
+from compute.cli import parser
 
 
-control.cli()
+parser.run()

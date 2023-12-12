@@ -24,7 +24,7 @@ from typing import Union
 from lxml import etree
 from lxml.builder import E
 
-from compute.common import DeviceConfig
+from compute.abstract import DeviceConfig
 from compute.exceptions import InvalidDeviceConfigError
 
 
@@ -32,9 +32,9 @@ from compute.exceptions import InvalidDeviceConfigError
 class DiskDriver:
     """Disk driver description for libvirt."""
 
-    name: str
-    type: str
-    cache: str
+    name: str = 'qemu'
+    type: str = 'qcow2'
+    cache: str = 'default'
 
     def __call__(self):
         """Return self."""
@@ -56,13 +56,7 @@ class DiskConfig(DeviceConfig):
     is_readonly: bool = False
     device: str = 'disk'
     bus: str = 'virtio'
-    driver: DiskDriver = field(
-        default_factory=DiskDriver(
-            name='qemu',
-            type='qcow2',
-            cache='writethrough',
-        )
-    )
+    driver: DiskDriver = field(default_factory=DiskDriver())
 
     def to_xml(self) -> str:
         """Return XML config for libvirt."""
@@ -99,13 +93,14 @@ class DiskConfig(DeviceConfig):
                 pretty_print=True,
             ).strip()
         driver = xml.find('driver')
+        cachetype = driver.get('cache')
         disk_params = {
             'type': xml.get('type'),
             'device': xml.get('device'),
             'driver': DiskDriver(
                 name=driver.get('name'),
                 type=driver.get('type'),
-                cache=driver.get('cache'),
+                **({'cache': cachetype} if cachetype else {}),
             ),
             'source': xml.find('source').get('file'),
             'target': xml.find('target').get('dev'),
@@ -122,7 +117,7 @@ class DiskConfig(DeviceConfig):
                     if driver_param is None:
                         msg = (
                             "'driver' tag must have "
-                            "'name', 'type' and 'cache' attributes"
+                            "'name' and 'type' attributes"
                         )
                         raise InvalidDeviceConfigError(msg, xml_str)
         return cls(**disk_params)

@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'Compute'
 copyright = '2023, Compute Authors'
 author = 'Compute Authors'
-release = '0.1.0-dev2'
+release = '0.1.0-dev3'
 
 # Sphinx general settings
 extensions = [
@@ -17,7 +17,6 @@ extensions = [
 templates_path = ['_templates']
 exclude_patterns = []
 language = 'en'
-#pygments_style = 'monokai'
 
 # HTML output settings
 html_theme = 'alabaster'

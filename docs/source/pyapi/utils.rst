@@ -1,5 +1,5 @@
-``utils``
-=========
+``utils`` — Common utils
+========================
 
 ``utils.units``
 ---------------
@@ -18,4 +18,11 @@
 ------------------
 
 .. automodule:: compute.utils.dictutil
+   :members:
+
+
+``utils.diskutils``
+-------------------
+
+.. automodule:: compute.utils.diskutils
    :members:

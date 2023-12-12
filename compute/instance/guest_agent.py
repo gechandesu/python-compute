@@ -27,7 +27,7 @@ import libvirt_qemu
 from compute.exceptions import (
     GuestAgentCommandNotSupportedError,
     GuestAgentError,
-    GuestAgentTimeoutError,
+    GuestAgentTimeoutExpired,
     GuestAgentUnavailableError,
 )
 
@@ -114,7 +114,7 @@ class GuestAgent:
             if command not in supported:
                 raise GuestAgentCommandNotSupportedError(command)
 
-    def guest_exec(  # noqa: PLR0913
+    def guest_exec(
         self,
         path: str,
         args: list[str] | None = None,
@@ -199,7 +199,7 @@ class GuestAgent:
             sleep(poll_interval)
             now = time()
             if now - start_time > self.timeout:
-                raise GuestAgentTimeoutError(self.timeout)
+                raise GuestAgentTimeoutExpired(self.timeout)
         log.debug(
             'Polling command pid=%s finished, time taken: %s seconds',
             pid,

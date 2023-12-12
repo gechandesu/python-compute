@@ -36,12 +36,12 @@ class GuestAgentUnavailableError(GuestAgentError):
     """Guest agent is not connected or is unavailable."""
 
 
-class GuestAgentTimeoutError(GuestAgentError):
-    """QEMU timeout exceeded."""
+class GuestAgentTimeoutExpired(GuestAgentError):  # noqa: N818
+    """QEMU timeout expired."""
 
     def __init__(self, seconds: int):
-        """Initialise GuestAgentTimeoutExceededError."""
-        super().__init__(f'QEMU timeout ({seconds} sec) exceeded')
+        """Initialise GuestAgentTimeoutExpired."""
+        super().__init__(f'QEMU timeout ({seconds} sec) expired')
 
 
 class GuestAgentCommandNotSupportedError(GuestAgentError):

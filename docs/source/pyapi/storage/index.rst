@@ -1,8 +1,8 @@
-``storage``
-============
+``storage`` — Manage storage pools and volumes
+==============================================
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 3
     :caption: Contents:
 
     pool

@@ -1,0 +1,13 @@
+[libvirt]
+# Libvirt connection URI.
+# See https://libvirt.org/uri.html#qemu-qemu-and-kvm-uris
+#uri = 'qemu:///system'
+
+[storage]
+# Name of libvirt storage pool to store compute instance etalon images.
+# compute takes images from here and creates disks for compute instances
+# based on them.
+#images = 'images'
+
+# Name of libvirt storage pool to store compute instance disks.
+#volumes = 'volumes'

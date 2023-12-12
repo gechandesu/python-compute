@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Compute.  If not, see <http://www.gnu.org/licenses/>.
 
+from .cloud_init import CloudInit
 from .guest_agent import GuestAgent
 from .instance import Instance, InstanceConfig
 from .schemas import InstanceSchema
