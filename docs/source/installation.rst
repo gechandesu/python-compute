@@ -6,7 +6,7 @@ Install Debian 12 on your host system. If you want use virtual machine as host m
 1. Download or build ``compute`` DEB packages.
 2. Install packages::
 
-      apt-get install -y --no-install-recommends ./compute*
+      apt-get install -y --no-install-recommends ./compute*.deb
       apt-get install -y --no-install-recommends dnsmasq
 
 3. Make sure that ``libvirtd`` and ``dnsmasq`` are enabled and running::
