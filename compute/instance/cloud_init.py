@@ -206,6 +206,7 @@ class CloudInit:
         Attach cloud-init disk to instance.
 
         :param disk: Path to disk.
+        :param target: Disk target name e.g. `vda`.
         :param instance: Compute instance object.
         """
         instance.attach_device(

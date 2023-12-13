@@ -27,9 +27,6 @@ Cloud-init configs may be set inplace into :file:`instance.yaml`.
      user_data: |
        ## template: jinja
        #cloud-config
-       merge_how:
-         - name: list
-           settings: [append]
        hostname: {{ ds.meta_data.hostname }}
        fqdn: {{ ds.meta_data.hostname }}.instances.generic.cloud
        manage_etc_hosts: true

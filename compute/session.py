@@ -210,6 +210,9 @@ class Session(AbstractContextManager):
         :param network_interfaces: List of virtual network interfaces
             configs. See :class:`NetworkInterfaceSchema` for more info.
         :type network_interfaces: list[dict]
+        :param cloud_init: Cloud-init configuration. See
+            :class:`CloudInitSchema` for info.
+        :type cloud_init: dict
         """
         data = InstanceSchema(**kwargs)
         config = InstanceConfig(data)
