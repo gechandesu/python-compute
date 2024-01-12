@@ -92,7 +92,7 @@ class InvalidDeviceConfigError(ComputeError):
         """Initialise InvalidDeviceConfigError."""
         self.msg = f'Invalid device XML config: {msg}'
         self.loc = f'    {xml}'
-        super().__init__(f'{self.msg}\n:{self.loc}')
+        super().__init__(f'{self.msg}:\n{self.loc}')
 
 
 class InvalidDataUnitError(ValueError, ComputeError):

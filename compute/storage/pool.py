@@ -73,9 +73,9 @@ class StoragePool:
         """
         Refresh storage pool.
 
-        :param retry: If True retry pool refresh on :class:`libvirtError`
-            with running asynchronous jobs.
-        :param timeout: Retry timeout in secodns. Affets only if `retry`
+        :param retry: If True retry pool refresh on 'pool have running
+            asynchronous jobs' error.
+        :param timeout: Retry timeout in seconds. Affects only if `retry`
             is True.
         """
         retry_timeout = dt.now(tz=datetime.UTC) + timedelta(seconds=timeout)

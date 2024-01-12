@@ -55,7 +55,7 @@ def init(session: Session, args: argparse.Namespace) -> None:
     capabilities = session.get_capabilities()
     node_info = session.get_node_info()
     base_instance_config = {
-        'name': str(uuid.uuid4()),
+        'name': str(uuid.uuid4()).split('-')[0],
         'title': None,
         'description': None,
         'arch': capabilities.arch,
@@ -70,16 +70,28 @@ def init(session: Session, args: argparse.Namespace) -> None:
             'topology': None,
             'features': None,
         },
-        'network_interfaces': [
-            {
-                'source': 'default',
-                'mac': ids.random_mac(),
-            },
-        ],
         'boot': {'order': ['cdrom', 'hd']},
         'cloud_init': None,
     }
     data = dictutil.override(base_instance_config, data)
+    net_default_interface = {
+        'model': 'virtio',
+        'source': 'default',
+        'mac': ids.random_mac(),
+    }
+    net_config = data.get('network', 'DEFAULT')
+    if net_config == 'DEFAULT' or net_config is True:
+        data['network'] = {'interfaces': [net_default_interface]}
+    elif net_config is None or net_config is False:
+        pass  # allow creating instance without network interfaces
+    else:
+        interfaces = data['network'].get('interfaces')
+        if interfaces:
+            interfaces_configs = [
+                dictutil.override(net_default_interface, interface)
+                for interface in interfaces
+            ]
+            data['network']['interfaces'] = interfaces_configs
     volumes = []
     targets = []
     for volume in data['volumes']:
@@ -246,8 +258,8 @@ def shutdown(session: Session, args: argparse.Namespace) -> None:
         method = 'SOFT'
     elif args.hard:
         method = 'HARD'
-    elif args.unsafe:
-        method = 'UNSAFE'
+    elif args.destroy:
+        method = 'DESTROY'
     else:
         method = 'NORMAL'
     instance.shutdown(method)

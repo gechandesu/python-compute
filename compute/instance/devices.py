@@ -92,6 +92,8 @@ class DiskConfig(DeviceConfig):
                 encoding='unicode',
                 pretty_print=True,
             ).strip()
+        source = xml.find('source')
+        target = xml.find('target')
         driver = xml.find('driver')
         cachetype = driver.get('cache')
         disk_params = {
@@ -102,14 +104,14 @@ class DiskConfig(DeviceConfig):
                 type=driver.get('type'),
                 **({'cache': cachetype} if cachetype else {}),
             ),
-            'source': xml.find('source').get('file'),
-            'target': xml.find('target').get('dev'),
-            'bus': xml.find('target').get('bus'),
+            'source': source.get('file') if source is not None else None,
+            'target': target.get('dev') if target is not None else None,
+            'bus': target.get('bus') if target is not None else None,
             'is_readonly': False if xml.find('readonly') is None else True,
         }
         for param in disk_params:
             if disk_params[param] is None:
-                msg = f"missing XML tag '{param}'"
+                msg = f"missing tag '{param}'"
                 raise InvalidDeviceConfigError(msg, xml_str)
             if param == 'driver':
                 driver = disk_params[param]

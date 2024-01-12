@@ -137,7 +137,7 @@ class CloudInit:
         subprocess.run(
             ['/usr/sbin/mkfs.vfat', '-n', 'CIDATA', '-C', str(disk), '1024'],
             check=True,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
         )
         self._write_to_disk(
             disk=disk,

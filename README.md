@@ -4,7 +4,8 @@ Compute instances management library.
 
 ## Docs
 
-Run `make serve-docs`. See [Development](#development) below.
+Documantation is available [here](https://nixhacks.net/hstack/compute/master/index.html).
+To build actual docs run `make serve-docs`. See [Development](#development) below.
 
 ## Roadmap
 
@@ -41,6 +42,7 @@ Run `make serve-docs`. See [Development](#development) below.
 - [ ] LXC
 - [ ] Attaching CDROM from sources: block, (http|https|ftp|ftps|tftp)://
 - [ ] Instance clones (thin, fat)
+- [ ] MicroVM
 
 ## Development
 
@@ -52,7 +54,7 @@ Install [poetry](https://python-poetry.org/), clone this repository and run:
 poetry install --with dev --with docs
 ```
 
-# Build Debian package
+## Build Debian package
 
 Install Docker first, then run:
 
@@ -62,11 +64,11 @@ make build-deb
 
 `compute` and `compute-doc` packages will built. See packaging/build directory.
 
-# Installation
+## Installation
 
 See [Installation](https://nixhacks.net/hstack/compute/master/installation.html).
 
-# Basic usage
+## Basic usage
 
 To get help run:
 

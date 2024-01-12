@@ -226,7 +226,7 @@ def get_parser() -> argparse.ArgumentParser:
         '-s',
         '--soft',
         action='store_true',
-        help='normal guest OS shutdown, guest agent is used',
+        help='guest OS shutdown using guest agent',
     )
     shutdown_opts.add_argument(
         '-n',
@@ -244,12 +244,12 @@ def get_parser() -> argparse.ArgumentParser:
         ),
     )
     shutdown_opts.add_argument(
-        '-u',
-        '--unsafe',
+        '-d',
+        '--destroy',
         action='store_true',
         help=(
             'destroy instance, this is similar to a power outage '
-            'and may result in data loss or corruption'
+            'and may result in data corruption'
         ),
     )
     shutdown.set_defaults(func=commands.shutdown)

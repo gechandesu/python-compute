@@ -16,11 +16,11 @@
 """Compute instance related objects schemas."""
 
 import re
+from collections import Counter
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import ValidationError, validator
-from pydantic.error_wrappers import ErrorWrapper
+from pydantic import validator
 
 from compute.abstract import EntityModel
 from compute.utils.units import DataUnit
@@ -74,12 +74,30 @@ class VolumeCapacitySchema(EntityModel):
     unit: DataUnit
 
 
+class DiskCache(StrEnum):
+    """Possible disk cache mechanisms enumeration."""
+
+    NONE = 'none'
+    WRITETHROUGH = 'writethrough'
+    WRITEBACK = 'writeback'
+    DIRECTSYNC = 'directsync'
+    UNSAFE = 'unsafe'
+
+
 class DiskDriverSchema(EntityModel):
     """Virtual disk driver model."""
 
     name: str
     type: str  # noqa: A003
-    cache: str = 'writethrough'
+    cache: DiskCache = DiskCache.WRITETHROUGH
+
+
+class DiskBus(StrEnum):
+    """Possible disk buses enumeration."""
+
+    VIRTIO = 'virtio'
+    IDE = 'ide'
+    SATA = 'sata'
 
 
 class VolumeSchema(EntityModel):
@@ -92,8 +110,16 @@ class VolumeSchema(EntityModel):
     source: str | None = None
     is_readonly: bool = False
     is_system: bool = False
-    bus: str = 'virtio'
+    bus: DiskBus = DiskBus.VIRTIO
     device: str = 'disk'
+
+
+class NetworkAdapterModel(StrEnum):
+    """Network adapter models."""
+
+    VIRTIO = 'virtio'
+    E1000 = 'e1000'
+    RTL8139 = 'rtl8139'
 
 
 class NetworkInterfaceSchema(EntityModel):
@@ -101,6 +127,13 @@ class NetworkInterfaceSchema(EntityModel):
 
     source: str
     mac: str
+    model: NetworkAdapterModel
+
+
+class NetworkSchema(EntityModel):
+    """Network configuration schema."""
+
+    interfaces: list[NetworkInterfaceSchema]
 
 
 class BootOptionsSchema(EntityModel):
@@ -134,7 +167,7 @@ class InstanceSchema(EntityModel):
     arch: str
     boot: BootOptionsSchema
     volumes: list[VolumeSchema]
-    network_interfaces: list[NetworkInterfaceSchema]
+    network: NetworkSchema | None | bool
     image: str | None = None
     cloud_init: CloudInitSchema | None = None
 
@@ -142,7 +175,7 @@ class InstanceSchema(EntityModel):
     def _check_name(cls, value: str) -> str:  # noqa: N805
         if not re.match(r'^[a-z0-9_-]+$', value):
             msg = (
-                'Name can contain only lowercase letters, numbers, '
+                'Name must contain only lowercase letters, numbers, '
                 'minus sign and underscore.'
             )
             raise ValueError(msg)
@@ -162,27 +195,33 @@ class InstanceSchema(EntityModel):
         if len([v for v in volumes if v.is_system is True]) != 1:
             msg = 'volumes list must contain one system volume'
             raise ValueError(msg)
-        for vol in volumes:
-            if vol.source is None and vol.capacity is None:
-                raise ValidationError(
-                    [
-                        ErrorWrapper(
-                            Exception(
-                                "capacity is required if 'source' is unset"
-                            ),
-                            loc='X.capacity',
-                        )
-                    ],
-                    model=VolumeSchema,
-                )
-            if vol.is_system is True and vol.is_readonly is True:
+        index = 0
+        for volume in volumes:
+            index += 1
+            if volume.source is None and volume.capacity is None:
+                msg = f"{index}: capacity is required if 'source' is unset"
+                raise ValueError(msg)
+            if volume.is_system is True and volume.is_readonly is True:
                 msg = 'volume marked as system cannot be readonly'
+                raise ValueError(msg)
+        sources = [v.source for v in volumes if v.source is not None]
+        targets = [v.target for v in volumes]
+        for item in [sources, targets]:
+            duplicates = Counter(item) - Counter(set(item))
+            if duplicates:
+                msg = f'find duplicate values: {list(duplicates)}'
                 raise ValueError(msg)
         return volumes
 
-    @validator('network_interfaces')
-    def _check_network_interfaces(cls, value: list) -> list:  # noqa: N805
-        if not value:
-            msg = 'Network interfaces list must contain at least one element'
+    @validator('network')
+    def _check_network(
+        cls,  # noqa: N805
+        network: NetworkSchema | None | bool,
+    ) -> NetworkSchema | None | bool:
+        if network is True:
+            msg = (
+                "'network' cannot be True, set it to False "
+                'or provide network configuration'
+            )
             raise ValueError(msg)
-        return value
+        return network

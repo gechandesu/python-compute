@@ -20,6 +20,7 @@ __all__ = ['Instance', 'InstanceConfig', 'InstanceInfo']
 import logging
 import time
 from typing import NamedTuple
+from uuid import UUID
 
 import libvirt
 from lxml import etree
@@ -66,7 +67,7 @@ class InstanceConfig(EntityConfig):
         self.emulator = schema.emulator
         self.arch = schema.arch
         self.boot = schema.boot
-        self.network_interfaces = schema.network_interfaces
+        self.network = schema.network
 
     def _gen_cpu_xml(self, cpu: CPUSchema) -> etree.Element:
         options = {
@@ -119,6 +120,7 @@ class InstanceConfig(EntityConfig):
         return E.interface(
             E.source(network=interface.source),
             E.mac(address=interface.mac),
+            E.model(type=interface.model),
             type='network',
         )
 
@@ -165,8 +167,9 @@ class InstanceConfig(EntityConfig):
         )
         devices = E.devices()
         devices.append(E.emulator(str(self.emulator)))
-        for interface in self.network_interfaces:
-            devices.append(self._gen_network_interface_xml(interface))
+        if self.network:
+            for interface in self.network.interfaces:
+                devices.append(self._gen_network_interface_xml(interface))
         devices.append(E.graphics(type='vnc', autoport='yes'))
         devices.append(E.input(type='tablet', bus='usb'))
         devices.append(
@@ -212,18 +215,14 @@ class Instance:
 
     def __init__(self, domain: libvirt.virDomain):
         """
-        Initialise Instance.
-
-        :ivar libvirt.virDomain domain: domain object
-        :ivar libvirt.virConnect connection: connection object
-        :ivar str name: domain name
-        :ivar GuestAgent guest_agent: :class:`GuestAgent` object
+        Initialise Compute Instance object.
 
         :param domain: libvirt domain object
         """
         self._domain = domain
         self._connection = domain.connect()
         self._name = domain.name()
+        self._uuid = domain.UUID()
         self._guest_agent = GuestAgent(domain)
 
     @property
@@ -240,6 +239,11 @@ class Instance:
     def name(self) -> str:
         """Instance name."""
         return self._name
+
+    @property
+    def uuid(self) -> UUID:
+        """Instance UUID."""
+        return UUID(bytes=self._uuid)
 
     @property
     def guest_agent(self) -> GuestAgent:
@@ -287,10 +291,9 @@ class Instance:
 
     def is_running(self) -> bool:
         """Return True if instance is running, else return False."""
-        if self.domain.isActive() != 1:
-            # 0 - is inactive, -1 - is error
-            return False
-        return True
+        if self.domain.isActive() == 1:
+            return True
+        return False
 
     def is_autostart(self) -> bool:
         """Return True if instance autostart is enabled, else return False."""
@@ -318,7 +321,7 @@ class Instance:
         log.info("Starting instance '%s'", self.name)
         if self.is_running():
             log.warning(
-                'Already started, nothing to do instance=%s', self.name
+                "Instance '%s' is already started, nothing to do", self.name
             )
             return
         try:
@@ -347,8 +350,8 @@ class Instance:
             to unplugging machine from power. Internally send SIGTERM to
             instance process and destroy it gracefully.
 
-        UNSAFE
-            Force shutdown. Internally send SIGKILL to instance process.
+        DESTROY
+            Forced shutdown. Internally send SIGKILL to instance process.
             There is high data corruption risk!
 
         If method is None NORMAL method will used.
@@ -361,7 +364,7 @@ class Instance:
             'SOFT': libvirt.VIR_DOMAIN_SHUTDOWN_GUEST_AGENT,
             'NORMAL': libvirt.VIR_DOMAIN_SHUTDOWN_DEFAULT,
             'HARD': libvirt.VIR_DOMAIN_DESTROY_GRACEFUL,
-            'UNSAFE': libvirt.VIR_DOMAIN_DESTROY_DEFAULT,
+            'DESTROY': libvirt.VIR_DOMAIN_DESTROY_DEFAULT,
         }
         if method is None:
             method = 'NORMAL'
@@ -372,11 +375,13 @@ class Instance:
         method = method.upper()
         if method not in methods:
             raise ValueError(f"Unsupported shutdown method: '{method}'")
+        if method == 'SOFT' and self.guest_agent.is_available() is False:
+            method = 'NORMAL'
         log.info("Performing instance shutdown with method '%s'", method)
         try:
             if method in ['SOFT', 'NORMAL']:
                 self.domain.shutdownFlags(flags=methods[method])
-            elif method in ['HARD', 'UNSAFE']:
+            elif method in ['HARD', 'DESTROY']:
                 self.domain.destroyFlags(flags=methods[method])
         except libvirt.libvirtError as e:
             raise InstanceError(
@@ -443,8 +448,7 @@ class Instance:
             self.domain.setAutostart(autostart)
         except libvirt.libvirtError as e:
             raise InstanceError(
-                f'Cannot set autostart flag for instance={self.name} '
-                f'{autostart=}: {e}'
+                f"Cannot set {autostart=} flag for instance '{self.name}': {e}"
             ) from e
 
     def set_vcpus(self, nvcpus: int, *, live: bool = False) -> None:
@@ -466,7 +470,7 @@ class Instance:
             raise InstanceError('vCPUs count is greather than max_vcpus')
         if nvcpus == self.get_info().nproc:
             log.warning(
-                'Instance instance=%s already have %s vCPUs, nothing to do',
+                "Instance '%s' already have %s vCPUs, nothing to do",
                 self.name,
                 nvcpus,
             )
@@ -492,18 +496,17 @@ class Instance:
                         self.domain.setVcpusFlags(nvcpus, flags=flags)
                     except GuestAgentCommandNotSupportedError:
                         log.warning(
-                            'Cannot set vCPUs in guest via agent, you may '
-                            'need to apply changes in guest manually.'
+                            "'guest-set-vcpus' command is not supported, '"
+                            'you may need to enable CPUs in guest manually.'
                         )
                 else:
                     log.warning(
-                        'Cannot set vCPUs in guest OS on instance=%s. '
-                        'You may need to apply CPUs in guest manually.',
-                        self.name,
+                        'Guest agent is not installed or not connected, '
+                        'you may need to enable CPUs in guest manually.'
                     )
         except libvirt.libvirtError as e:
             raise InstanceError(
-                f'Cannot set vCPUs for instance={self.name}: {e}'
+                f"Cannot set vCPUs for instance '{self.name}': {e}"
             ) from e
 
     def set_memory(self, memory: int, *, live: bool = False) -> None:

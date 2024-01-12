@@ -15,7 +15,7 @@
 
 """Compute instances management library."""
 
-__version__ = '0.1.0-dev3'
+__version__ = '0.1.0-dev4'
 
 from .config import Config
 from .instance import CloudInit, Instance, InstanceConfig, InstanceSchema

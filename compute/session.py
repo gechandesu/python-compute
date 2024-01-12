@@ -207,8 +207,8 @@ class Session(AbstractContextManager):
         :param volumes: List of storage volume configs. For more info
             see :class:`VolumeSchema`.
         :type volumes: list[dict]
-        :param network_interfaces: List of virtual network interfaces
-            configs. See :class:`NetworkInterfaceSchema` for more info.
+        :param network: List of virtual network interfaces configs.
+            See :class:`NetworkSchema` for more info.
         :type network_interfaces: list[dict]
         :param cloud_init: Cloud-init configuration. See
             :class:`CloudInitSchema` for info.

@@ -48,5 +48,5 @@ test-build: build-deb
 	scp packaging/build/compute*.deb vm:~
 
 upload-docs: docs-versions
-	ssh root@hitomi 'rm -rf /srv/http/nixhacks.net/hstack/*'
-	scp -r $(DOCS_BUILDDIR)/* root@hitomi:/srv/http/nixhacks.net/hstack/
+	ssh root@hitomi 'rm -rf /srv/http/nixhacks.net/hstack/compute/*'
+	scp -r $(DOCS_BUILDDIR)/* root@hitomi:/srv/http/nixhacks.net/hstack/compute/

@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'Compute'
 copyright = '2023, Compute Authors'
 author = 'Compute Authors'
-release = '0.1.0-dev3'
+release = '0.1.0-dev4'
 
 # Sphinx general settings
 extensions = [

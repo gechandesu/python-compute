@@ -15,6 +15,7 @@
 
 """Tools for data units convertion."""
 
+from collections.abc import Callable
 from enum import StrEnum
 
 from compute.exceptions import InvalidDataUnitError
@@ -28,6 +29,14 @@ class DataUnit(StrEnum):
     MIB = 'MiB'
     GIB = 'GiB'
     TIB = 'TiB'
+    KB = 'kb'
+    MB = 'Mb'
+    GB = 'Gb'
+    TB = 'Tb'
+    KBIT = 'kbit'
+    MBIT = 'Mbit'
+    GBIT = 'Gbit'
+    TBIT = 'Tbit'
 
     @classmethod
     def _missing_(cls, name: str) -> 'DataUnit':
@@ -37,17 +46,74 @@ class DataUnit(StrEnum):
         return None
 
 
-def to_bytes(value: int, unit: DataUnit = DataUnit.BYTES) -> int:
-    """Convert value to bytes. See :class:`DataUnit`."""
-    try:
-        _ = DataUnit(unit)
-    except ValueError as e:
-        raise InvalidDataUnitError(e, list(DataUnit)) from e
-    powers = {
+def validate_input(*args: str) -> Callable:
+    """Validate data units in functions input."""
+    to_validate = args
+
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args: float | str, **kwargs: str) -> Callable:
+            try:
+                if kwargs:
+                    for arg in to_validate:
+                        unit = kwargs[arg]
+                        DataUnit(unit)
+                else:
+                    for arg in args[1:]:
+                        unit = arg
+                        DataUnit(unit)
+            except ValueError as e:
+                raise InvalidDataUnitError(e, list(DataUnit)) from e
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+@validate_input('unit')
+def to_bytes(value: float, unit: DataUnit = DataUnit.BYTES) -> float:
+    """Convert value to bytes."""
+    unit = DataUnit(unit)
+    basis = 2 if unit.endswith('iB') else 10
+    factor = 125 if unit.endswith('bit') else 1
+    power = {
         DataUnit.BYTES: 0,
-        DataUnit.KIB: 1,
-        DataUnit.MIB: 2,
-        DataUnit.GIB: 3,
-        DataUnit.TIB: 4,
+        DataUnit.KIB: 10,
+        DataUnit.MIB: 20,
+        DataUnit.GIB: 30,
+        DataUnit.TIB: 40,
+        DataUnit.KB: 3,
+        DataUnit.MB: 6,
+        DataUnit.GB: 9,
+        DataUnit.TB: 12,
+        DataUnit.KBIT: 0,
+        DataUnit.MBIT: 3,
+        DataUnit.GBIT: 6,
+        DataUnit.TBIT: 9,
     }
-    return value * pow(1024, powers[unit])
+    return value * factor * pow(basis, power[unit])
+
+
+@validate_input('from_unit', 'to_unit')
+def convert(value: float, from_unit: DataUnit, to_unit: DataUnit) -> float:
+    """Convert units."""
+    value_in_bits = to_bytes(value, from_unit) * 8
+    to_unit = DataUnit(to_unit)
+    basis = 2 if to_unit.endswith('iB') else 10
+    divisor = 1 if to_unit.endswith('bit') else 8
+    power = {
+        DataUnit.BYTES: 0,
+        DataUnit.KIB: 10,
+        DataUnit.MIB: 20,
+        DataUnit.GIB: 30,
+        DataUnit.TIB: 40,
+        DataUnit.KB: 3,
+        DataUnit.MB: 6,
+        DataUnit.GB: 9,
+        DataUnit.TB: 12,
+        DataUnit.KBIT: 3,
+        DataUnit.MBIT: 6,
+        DataUnit.GBIT: 9,
+        DataUnit.TBIT: 12,
+    }
+    return value_in_bits / divisor / pow(basis, power[to_unit])

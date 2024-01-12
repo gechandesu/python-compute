@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'compute'
-version = '0.1.0-dev3'
+version = '0.1.0-dev4'
 description = 'Compute instances management library'
 license = 'GPL-3.0-or-later'
 authors = ['ge <ge@nixhacks.net>']

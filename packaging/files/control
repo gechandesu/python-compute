@@ -28,16 +28,18 @@ Depends:
  ${misc:Depends},
  qemu-system,
  qemu-utils,
+ libvirt-daemon,
  libvirt-daemon-system,
+ libvirt-daemon-driver-qemu,
  libvirt-clients,
  python3-libvirt,
  python3-lxml,
  python3-yaml,
  python3-pydantic,
  mtools,
- dosfstools
-Recommends:
- dnsmasq
+ dosfstools,
+ dnsmasq,
+ dnsmasq-base
 Suggests:
  compute-doc
 Description: Compute instances management library (Python 3)
