@@ -19,4 +19,4 @@ build: clean
 	$(DOCKER_CMD) run --rm -i -v $$PWD/$(BUILDDIR):/mnt --ulimit "nofile=1024:1048576" \
 		$(DOCKER_IMG) makepkg --nodeps --clean
 	# Remove unwanted files from build dir
-	rm $(BUILDDIR)/compute*.tar.gz $(BUILDDIR)/PKGBUILD
+	find $(BUILDDIR) ! -name '*.pkg.tar.zst' -type f -exec rm -f {} +

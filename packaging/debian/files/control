@@ -38,6 +38,7 @@ Depends:
  python3-pydantic,
  mtools,
  dosfstools,
+Recommends:
  dnsmasq,
  dnsmasq-base
 Suggests:

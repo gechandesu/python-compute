@@ -1,12 +1,16 @@
 pkgname=compute
-pkgver='0.1.0-dev4'
+pkgver='%placeholder%'
 pkgrel=1
 pkgdesc='Compute instances management library'
 arch=(any)
 url=https://get.lulzette.ru/hstack/compute
 license=('GPL-3-or-later')
 makedepends=(python python-pip)
-depends=(python libvirt libvirt-python qemu-base qemu-system-x86 qemu-img dnsmasq iptables-nft)
+depends=(python libvirt libvirt-python qemu-base qemu-system-x86 qemu-img)
+optdepends=(
+    'dnsmasq: required for default NAT/DHCP'
+    'iptables-nft: required for default NAT'
+)
 provides=(compute)
 conflicts=()
 
