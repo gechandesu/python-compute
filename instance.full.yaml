@@ -127,9 +127,11 @@ boot:
     - hd
 # Network configuration. This decision is temporary and will be changed in
 # the future. We recommend not using this option.
-network_interfaces:
-  - mac: 00:16:3e:7e:8c:4a
-    source: default
+network:
+  interfaces:
+    - mac: 00:16:3e:7e:8c:4a
+      source: default
+      model: virtio
 # Disk image
 image: /images/debian-12-generic-amd64.qcow2
 # Storage volumes list
