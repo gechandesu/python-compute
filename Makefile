@@ -5,7 +5,7 @@ DOCS_BUILDDIR = docs/build
 
 .PHONY: docs
 
-all: docs build debian archlinux
+all: build debian archlinux
 
 requirements.txt:
 	poetry export -f requirements.txt -o requirements.txt
