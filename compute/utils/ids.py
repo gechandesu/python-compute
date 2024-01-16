@@ -15,19 +15,19 @@
 
 """Random identificators."""
 
-# ruff: noqa: S311, C417
+# ruff: noqa: S311
 
 import random
 
 
 def random_mac() -> str:
     """Retrun random MAC address."""
-    mac = [
-        0x00,
-        0x16,
-        0x3E,
-        random.randint(0x00, 0x7F),
+    bits = [
+        0x0A,
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
+        random.randint(0x00, 0xFF),
         random.randint(0x00, 0xFF),
         random.randint(0x00, 0xFF),
     ]
-    return ':'.join(map(lambda x: '%02x' % x, mac))
+    return ':'.join([f'{b:02x}' for b in bits])
