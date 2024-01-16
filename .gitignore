@@ -1,6 +1,6 @@
 dist/
 docs/build/
-packaging/build/
+packaging/*/build/
 instance.yaml
 .ruff_cache/
 __pycache__/

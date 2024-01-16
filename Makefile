@@ -5,7 +5,7 @@ DOCS_BUILDDIR = docs/build
 
 .PHONY: docs
 
-all: docs build-deb
+all: docs build debian archlinux
 
 requirements.txt:
 	poetry export -f requirements.txt -o requirements.txt
@@ -13,8 +13,11 @@ requirements.txt:
 build: version format lint
 	poetry build
 
-build-deb: build
-	cd packaging && $(MAKE)
+debian:
+	cd packaging/debian && $(MAKE)
+
+archlinux:
+	cd packaging/archlinux && $(MAKE)
 
 version:
 	VERSION=$$(awk '/^version/{print $$3}' pyproject.toml); \
@@ -42,11 +45,12 @@ clean:
 	[ -d $(DISTDIR) ] && rm -rf $(DISTDIR) || true
 	[ -d $(DOCS_BUILDDIR) ] && rm -rf $(DOCS_BUILDDIR) || true
 	find . -type d -name __pycache__ -exec rm -rf {} \; > /dev/null 2>&1 || true
-	cd packaging && $(MAKE) clean
+	cd packaging/debian && $(MAKE) clean
+	cd packaging/archlinux && $(MAKE) clean
 
-test-build: build-deb
-	scp packaging/build/compute*.deb vm:~
+test-build: build debian
+	scp packaging/debian/build/compute*.deb vm:~
 
-upload-docs: docs-versions
+upload-docs:
 	ssh root@hitomi 'rm -rf /srv/http/nixhacks.net/hstack/compute/*'
 	scp -r $(DOCS_BUILDDIR)/* root@hitomi:/srv/http/nixhacks.net/hstack/compute/

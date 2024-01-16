@@ -1,0 +1,16 @@
+pkgname=compute
+pkgver='0.1.0-dev4'
+pkgrel=1
+pkgdesc='Compute instances management library'
+arch=(any)
+url=https://get.lulzette.ru/hstack/compute
+license=('GPL-3-or-later')
+makedepends=(python python-pip)
+depends=(python libvirt libvirt-python qemu-base qemu-system-x86 qemu-img dnsmasq iptables-nft)
+provides=(compute)
+conflicts=()
+
+package() {
+    pip install --no-cache-dir --no-deps --root $pkgdir ../$pkgname-*.tar.gz
+    install -Dm644 ../completion.bash $pkgdir/usr/share/bash-completion/completions/compute
+}
