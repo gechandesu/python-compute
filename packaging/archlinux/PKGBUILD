@@ -17,4 +17,5 @@ conflicts=()
 package() {
     pip install --no-cache-dir --no-deps --root $pkgdir ../$pkgname-*.tar.gz
     install -Dm644 ../completion.bash $pkgdir/usr/share/bash-completion/completions/compute
+    install -Dm644 $pkgdir/usr/lib/*/site-packages/computed.toml $pkgdir/etc/compute/computed.toml
 }
