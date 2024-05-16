@@ -119,7 +119,7 @@ class StoragePool:
             'src_pool=%s src_vol=%s dst_pool=%s dst_vol=%s',
             src.pool_name,
             src.name,
-            self.pool.name,
+            self.pool.name(),
             dst.name,
         )
         vol = self.pool.createXMLFrom(
@@ -134,7 +134,9 @@ class StoragePool:
     def get_volume(self, name: str) -> Volume | None:
         """Lookup and return Volume instance or None."""
         log.info(
-            'Lookup for storage volume vol=%s in pool=%s', name, self.pool.name
+            'Lookup for storage volume vol=%s in pool=%s',
+            name,
+            self.pool.name(),
         )
         try:
             vol = self.pool.storageVolLookupByName(name)
