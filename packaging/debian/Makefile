@@ -16,7 +16,7 @@ build: clean
 	cp -v ../../dist/compute-*[.tar.gz] $(BUILDDIR)/
 	cp -r ../../docs $(BUILDDIR)/
 	cp ../../extra/completion.bash $(BUILDDIR)/compute.bash-completion
-	if [ -f build.sh.bak ]; then mv build.sh{.bak,}; fi
+	if [ -f build.sh.bak ]; then mv build.sh.bak build.sh; fi
 	cp build.sh{,.bak}
 	awk '/authors/{gsub(/[\[\]]/,"");print $$3" "$$4}' ../pyproject.toml \
 		| sed "s/['<>]//g" \
