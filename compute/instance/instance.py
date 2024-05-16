@@ -788,6 +788,12 @@ class Instance:
                             disk.source,
                         )
                     continue
+                if volume.storagePoolLookupByVolume().name() == 'images':
+                    log.info(
+                        'Volume %s skipped because it is from images pool',
+                        volume.path(),
+                    )
+                    continue
                 log.info('Delete volume: %s', volume.path())
                 volume.delete()
         log.info('Undefine instance')
