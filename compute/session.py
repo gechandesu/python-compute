@@ -17,6 +17,7 @@
 
 import logging
 from contextlib import AbstractContextManager
+from pathlib import Path
 from types import TracebackType
 from typing import Any, NamedTuple
 from uuid import uuid4
@@ -245,11 +246,17 @@ class Session(AbstractContextManager):
                 log.info('Volume %s is CDROM device', volume_name)
             elif volume.source is not None:
                 log.info('Using volume %s as source', volume_name)
-                volume_source = volume.source
                 if volume.capacity:
                     capacity = units.to_bytes(
                         volume.capacity.value, volume.capacity.unit
                     )
+                    log.info('Getting volume %s', volume.source)
+                    vol = volumes_pool.get_volume(Path(volume_name).name)
+                    log.info(
+                        'Resize volume to specified size: %s',
+                        capacity,
+                    )
+                    vol.resize(capacity, unit=units.DataUnit.BYTES)
             else:
                 capacity = units.to_bytes(
                     volume.capacity.value, volume.capacity.unit
@@ -259,7 +266,7 @@ class Session(AbstractContextManager):
                     path=str(volumes_pool.path.joinpath(volume_name)),
                     capacity=capacity,
                 )
-                volume_source = volume_config.path
+                volume.source = volume_config.path
                 log.debug('Volume config: %s', volume_config)
                 if volume.is_system is True and data.image:
                     log.info(
@@ -269,21 +276,20 @@ class Session(AbstractContextManager):
                     image = images_pool.get_volume(data.image)
                     log.info('Cloning image into volumes pool...')
                     vol = volumes_pool.clone_volume(image, volume_config)
+                    log.info(
+                        'Resize cloned volume to specified size: %s',
+                        capacity,
+                    )
+                    vol.resize(capacity, unit=units.DataUnit.BYTES)
                 else:
                     log.info('Create volume %s', volume_config.name)
                     volumes_pool.create_volume(volume_config)
-            if capacity is not None:
-                log.info(
-                    'Resize cloned volume to specified size: %s',
-                    capacity,
-                )
-                vol.resize(capacity, unit=units.DataUnit.BYTES)
             log.info('Attaching volume to instance...')
             instance.attach_device(
                 DiskConfig(
                     type=volume.type,
                     device=volume.device,
-                    source=volume_source,
+                    source=volume.source,
                     target=volume.target,
                     is_readonly=volume.is_readonly,
                     bus=volume.bus,
